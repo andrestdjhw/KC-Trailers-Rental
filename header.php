@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <?php wp_head(); ?>
   </head>
-  <body <?php body_class(); ?>>
-    <div class="bg-gray-300">
-      <div class="max-w-4xl mx-auto mb-5 px-4">
-        <h1 class="text-3xl py-10"><a href="<?php echo get_home_url(); ?>" class="hover:text-blue-500">Welcome To Our Header!</a></h1>
-      </div>
-    </div>
+  <body <?php body_class('min-h-screen flex flex-col bg-white'); ?>>
+
+    <!-- Navbar (componente React) -->
+    <div id="render-navbar" data-logo="/wp-content/uploads/2026/06/KC_BrandLogo.png"></div>
+
+    <!-- El contenido de cada página se renderiza aquí, entre navbar y footer.
+         <main class="flex-1"> empuja el footer al fondo (sticky footer). -->
+    <main class="flex-1">

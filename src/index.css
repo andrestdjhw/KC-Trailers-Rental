@@ -1,2 +1,11 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+
+@theme {
+  /* Oswald: tipografía display/condensada para la "chrome" del sitio
+     (navbar, footer, encabezados, botones). El cuerpo de texto sigue
+     usando la fuente del sistema para máxima legibilidad.
+     Esto genera la utilidad `font-display`. */
+  --font-display: "Oswald", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, sans-serif;
+}
