@@ -220,7 +220,7 @@ $hero_pattern = "background-color:#1B2127;"
         Haul with confidence.<br>Rent from us.
       </h1>
       <p class="mt-5 max-w-xl text-lg leading-relaxed text-[#C7CDD3]">
-        Dump, enclosed and car hauler trailers fully equipped and ready 24/7 in Duluth, GA. Reserve in minutes.
+        Dump, enclosed and car hauler trailers — fully equipped and ready 24/7 in Duluth, GA. Reserve in minutes.
       </p>
       <div class="mt-8 flex flex-wrap items-center gap-4">
         <a href="/contact"
@@ -259,7 +259,7 @@ $hero_pattern = "background-color:#1B2127;"
 </section>
 
 <!-- ===================== 5.3 NUESTROS REMOLQUES ===================== -->
-<section class="bg-[#F4F2ED] py-20 reveal reveal-left">
+<section id="trailers" class="bg-[#F4F2ED] py-20 reveal reveal-left">
   <div class="mx-auto max-w-7xl px-6">
     <div class="mb-12 text-center">
       <span class="text-[13px] font-semibold uppercase tracking-[0.28em] text-[#D7282F]">Our Trailers</span>

@@ -17,7 +17,7 @@ if (footerMount) {
   ReactDOM.createRoot(footerMount).render(<Footer logoUrl={footerMount.dataset.logo} />)
 }
 
-// Contact Form (puede haber más de uno en la página)
+// Contact / Booking Form (puede haber más de uno; data-trailer pre-selecciona el remolque)
 document.querySelectorAll(".render-contact-form").forEach((el) => {
-  ReactDOM.createRoot(el).render(<ContactForm />)
+  ReactDOM.createRoot(el).render(<ContactForm defaultTrailer={el.dataset.trailer || ""} />)
 })

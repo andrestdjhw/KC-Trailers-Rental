@@ -25,10 +25,16 @@ const TRAILER_OPTIONS = [
 
 const isConfigured = (v) => v && !v.startsWith("YOUR_")
 
-export default function ContactForm() {
+// Fecha de hoy en formato YYYY-MM-DD (hora local), para el atributo min.
+const todayStr = new Date().toLocaleDateString("en-CA")
+
+export default function ContactForm({ defaultTrailer = "" }) {
   const formRef = useRef(null)
   const [status, setStatus] = useState("idle") // idle | sending | success | error
   const [errorMsg, setErrorMsg] = useState("")
+  const [pickup, setPickup] = useState("")
+  const [returnDate, setReturnDate] = useState("")
+  const initialTrailer = TRAILER_OPTIONS.includes(defaultTrailer) ? defaultTrailer : ""
 
   // Inicializa EmailJS y carga el script de reCAPTCHA v3 una sola vez.
   useEffect(() => {
@@ -44,13 +50,13 @@ export default function ContactForm() {
     }
   }, [])
 
-  // Obtiene un token de reCAPTCHA v3 (acción "contact").
+  // Obtiene un token de reCAPTCHA v3 (acción "booking").
   function getRecaptchaToken() {
     return new Promise((resolve) => {
       if (!window.grecaptcha || !isConfigured(RECAPTCHA_SITE_KEY)) return resolve("")
       window.grecaptcha.ready(() => {
         window.grecaptcha
-          .execute(RECAPTCHA_SITE_KEY, { action: "contact" })
+          .execute(RECAPTCHA_SITE_KEY, { action: "booking" })
           .then(resolve)
           .catch(() => resolve(""))
       })
@@ -59,11 +65,19 @@ export default function ContactForm() {
 
   async function handleSubmit(e) {
     e.preventDefault()
+
     if (!isConfigured(EMAILJS_PUBLIC_KEY)) {
       setStatus("error")
       setErrorMsg("Form not configured yet. Please call us at " + PHONE_DISPLAY + ".")
       return
     }
+    // Validación de fechas (la devolución no puede ser antes del retiro)
+    if (pickup && returnDate && returnDate < pickup) {
+      setStatus("error")
+      setErrorMsg("The return date can't be before the pickup date.")
+      return
+    }
+
     setStatus("sending")
     setErrorMsg("")
     try {
@@ -77,6 +91,8 @@ export default function ContactForm() {
       })
       setStatus("success")
       form.reset()
+      setPickup("")
+      setReturnDate("")
     } catch (err) {
       setStatus("error")
       setErrorMsg(
@@ -97,10 +113,10 @@ export default function ContactForm() {
           </svg>
         </div>
         <h3 className="mt-4 font-display text-2xl font-bold uppercase tracking-tight text-white">
-          Request sent
+          Booking request sent
         </h3>
         <p className="mt-2 text-[15px] leading-relaxed text-[#C7CDD3]">
-          Thanks! We'll get back to you shortly. For anything urgent, call {PHONE_DISPLAY}.
+          Thanks! We'll confirm availability and the next steps shortly. For anything urgent, call {PHONE_DISPLAY}.
         </p>
         <button
           type="button"
@@ -119,49 +135,28 @@ export default function ContactForm() {
   return (
     <div className="w-full rounded-xl border border-white/15 bg-white/10 p-6 shadow-2xl backdrop-blur-md sm:p-8">
       <h3 className="font-display text-2xl font-bold uppercase tracking-tight text-white">
-        Reserve your trailer
+        Book your trailer
       </h3>
       <p className="mt-1 text-[14px] text-[#C7CDD3]">
-        Tell us what you need — we'll get right back to you.
+        Send a request and we'll confirm availability.
       </p>
 
-      <form ref={formRef} onSubmit={handleSubmit} className="mt-5 space-y-4" noValidate>
+      <form ref={formRef} onSubmit={handleSubmit} className="mt-5 space-y-4">
         <Field label="Full name">
-          <input
-            type="text"
-            name="from_name"
-            required
-            autoComplete="name"
-            className={inputClass}
-            placeholder="John Smith"
-          />
+          <input type="text" name="from_name" required autoComplete="name" className={inputClass} placeholder="John Smith" />
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Phone">
-            <input
-              type="tel"
-              name="phone"
-              required
-              autoComplete="tel"
-              className={inputClass}
-              placeholder="(770) 000-0000"
-            />
+            <input type="tel" name="phone" required autoComplete="tel" className={inputClass} placeholder="(770) 000-0000" />
           </Field>
           <Field label="Email">
-            <input
-              type="email"
-              name="reply_to"
-              required
-              autoComplete="email"
-              className={inputClass}
-              placeholder="you@email.com"
-            />
+            <input type="email" name="reply_to" required autoComplete="email" className={inputClass} placeholder="you@email.com" />
           </Field>
         </div>
 
-        <Field label="Trailer of interest">
-          <select name="trailer" className={inputClass} defaultValue="">
+        <Field label="Trailer">
+          <select name="trailer" required className={inputClass} defaultValue={initialTrailer}>
             <option value="" disabled style={{ color: "#1B2127" }}>Select a trailer…</option>
             {TRAILER_OPTIONS.map((t) => (
               <option key={t} value={t} style={{ color: "#1B2127" }}>{t}</option>
@@ -169,14 +164,48 @@ export default function ContactForm() {
           </select>
         </Field>
 
-        <Field label="Message">
-          <textarea
-            name="message"
-            rows={3}
-            className={inputClass + " resize-none"}
-            placeholder="Dates, load details, questions…"
-          />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Pickup date">
+            <input
+              type="date"
+              name="pickup_date"
+              required
+              min={todayStr}
+              value={pickup}
+              onChange={(e) => setPickup(e.target.value)}
+              className={dateClass}
+            />
+          </Field>
+          <Field label="Return date">
+            <input
+              type="date"
+              name="return_date"
+              required
+              min={pickup || todayStr}
+              value={returnDate}
+              onChange={(e) => setReturnDate(e.target.value)}
+              className={dateClass}
+            />
+          </Field>
+        </div>
+
+        <Field label="Notes (optional)">
+          <textarea name="message" rows={2} className={inputClass + " resize-none"} placeholder="Load details, questions…" />
         </Field>
+
+        <label className="flex items-start gap-2.5 text-[13px] leading-snug text-[#C7CDD3]">
+          <input
+            type="checkbox"
+            name="requirements_ack"
+            value="Yes — customer confirmed rental requirements"
+            required
+            className="mt-0.5 h-4 w-4 shrink-0 accent-[#D7282F]"
+          />
+          <span>
+            I understand the rental requirements: valid Georgia driver's license, auto insurance,
+            a credit card for the deposit, and a <strong className="text-white">$45 non-refundable booking fee</strong>.
+          </span>
+        </label>
 
         {/* Token de reCAPTCHA v3 (se rellena al enviar) */}
         <input type="hidden" name="g-recaptcha-response" />
@@ -192,11 +221,11 @@ export default function ContactForm() {
           disabled={sending}
           className="w-full rounded-md bg-[#D7282F] px-5 py-3 font-display text-[15px] font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#EE3A41] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {sending ? "Sending…" : "Reserve Now"}
+          {sending ? "Sending…" : "Request booking"}
         </button>
 
         <p className="text-[11px] leading-snug text-[#9AA4AE]">
-          Protected by reCAPTCHA — Google's{" "}
+          This is a booking request — not a confirmed reservation. Protected by reCAPTCHA — Google's{" "}
           <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="underline">Privacy Policy</a>{" "}
           and{" "}
           <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="underline">Terms</a>{" "}apply.
@@ -210,6 +239,9 @@ export default function ContactForm() {
 
 const inputClass =
   "w-full rounded-md border border-white/20 bg-white/10 px-3.5 py-2.5 text-[15px] text-white placeholder:text-[#9AA4AE] focus:border-[#D7282F] focus:outline-none focus:ring-2 focus:ring-[#D7282F]/30"
+
+// Igual que inputClass pero forzando el esquema oscuro del date picker nativo
+const dateClass = inputClass + " [color-scheme:dark]"
 
 function Field({ label, children }) {
   return (

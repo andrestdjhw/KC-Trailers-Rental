@@ -618,10 +618,18 @@ const PHONE_DISPLAY = "770 708 8749";
 // Opciones del select (coinciden con las 6 páginas de remolque)
 const TRAILER_OPTIONS = ["16' Dump — Down 2 Earth", "Load Trail Dump", "Enclosed 14' x 7' x 7'", "Spartan Cargo Enclosed", 'Car Hauler 87" x 20\'', 'Car Hauler 102" x 20\'', "Not sure yet"];
 const isConfigured = v => v && !v.startsWith("YOUR_");
-function ContactForm() {
+
+// Fecha de hoy en formato YYYY-MM-DD (hora local), para el atributo min.
+const todayStr = new Date().toLocaleDateString("en-CA");
+function ContactForm({
+  defaultTrailer = ""
+}) {
   const formRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
   const [status, setStatus] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("idle"); // idle | sending | success | error
   const [errorMsg, setErrorMsg] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("");
+  const [pickup, setPickup] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("");
+  const [returnDate, setReturnDate] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("");
+  const initialTrailer = TRAILER_OPTIONS.includes(defaultTrailer) ? defaultTrailer : "";
 
   // Inicializa EmailJS y carga el script de reCAPTCHA v3 una sola vez.
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
@@ -639,13 +647,13 @@ function ContactForm() {
     }
   }, []);
 
-  // Obtiene un token de reCAPTCHA v3 (acción "contact").
+  // Obtiene un token de reCAPTCHA v3 (acción "booking").
   function getRecaptchaToken() {
     return new Promise(resolve => {
       if (!window.grecaptcha || !isConfigured(RECAPTCHA_SITE_KEY)) return resolve("");
       window.grecaptcha.ready(() => {
         window.grecaptcha.execute(RECAPTCHA_SITE_KEY, {
-          action: "contact"
+          action: "booking"
         }).then(resolve).catch(() => resolve(""));
       });
     });
@@ -655,6 +663,12 @@ function ContactForm() {
     if (!isConfigured(EMAILJS_PUBLIC_KEY)) {
       setStatus("error");
       setErrorMsg("Form not configured yet. Please call us at " + PHONE_DISPLAY + ".");
+      return;
+    }
+    // Validación de fechas (la devolución no puede ser antes del retiro)
+    if (pickup && returnDate && returnDate < pickup) {
+      setStatus("error");
+      setErrorMsg("The return date can't be before the pickup date.");
       return;
     }
     setStatus("sending");
@@ -669,6 +683,8 @@ function ContactForm() {
       });
       setStatus("success");
       form.reset();
+      setPickup("");
+      setReturnDate("");
     } catch (err) {
       setStatus("error");
       setErrorMsg(err && typeof err.text === "string" ? err.text : "Something went wrong. Please try again or call us.");
@@ -696,10 +712,10 @@ function ContactForm() {
         })
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("h3", {
         className: "mt-4 font-display text-2xl font-bold uppercase tracking-tight text-white",
-        children: "Request sent"
+        children: "Booking request sent"
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("p", {
         className: "mt-2 text-[15px] leading-relaxed text-[#C7CDD3]",
-        children: ["Thanks! We'll get back to you shortly. For anything urgent, call ", PHONE_DISPLAY, "."]
+        children: ["Thanks! We'll confirm availability and the next steps shortly. For anything urgent, call ", PHONE_DISPLAY, "."]
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("button", {
         type: "button",
         onClick: () => setStatus("idle"),
@@ -715,15 +731,14 @@ function ContactForm() {
     className: "w-full rounded-xl border border-white/15 bg-white/10 p-6 shadow-2xl backdrop-blur-md sm:p-8",
     children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("h3", {
       className: "font-display text-2xl font-bold uppercase tracking-tight text-white",
-      children: "Reserve your trailer"
+      children: "Book your trailer"
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("p", {
       className: "mt-1 text-[14px] text-[#C7CDD3]",
-      children: "Tell us what you need \u2014 we'll get right back to you."
+      children: "Send a request and we'll confirm availability."
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("form", {
       ref: formRef,
       onSubmit: handleSubmit,
       className: "mt-5 space-y-4",
-      noValidate: true,
       children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(Field, {
         label: "Full name",
         children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
@@ -758,11 +773,12 @@ function ContactForm() {
           })
         })]
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(Field, {
-        label: "Trailer of interest",
+        label: "Trailer",
         children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("select", {
           name: "trailer",
+          required: true,
           className: inputClass,
-          defaultValue: "",
+          defaultValue: initialTrailer,
           children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("option", {
             value: "",
             disabled: true,
@@ -778,14 +794,53 @@ function ContactForm() {
             children: t
           }, t))]
         })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+        className: "grid gap-4 sm:grid-cols-2",
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(Field, {
+          label: "Pickup date",
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
+            type: "date",
+            name: "pickup_date",
+            required: true,
+            min: todayStr,
+            value: pickup,
+            onChange: e => setPickup(e.target.value),
+            className: dateClass
+          })
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(Field, {
+          label: "Return date",
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
+            type: "date",
+            name: "return_date",
+            required: true,
+            min: pickup || todayStr,
+            value: returnDate,
+            onChange: e => setReturnDate(e.target.value),
+            className: dateClass
+          })
+        })]
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(Field, {
-        label: "Message",
+        label: "Notes (optional)",
         children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("textarea", {
           name: "message",
-          rows: 3,
+          rows: 2,
           className: inputClass + " resize-none",
-          placeholder: "Dates, load details, questions\u2026"
+          placeholder: "Load details, questions\u2026"
         })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("label", {
+        className: "flex items-start gap-2.5 text-[13px] leading-snug text-[#C7CDD3]",
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
+          type: "checkbox",
+          name: "requirements_ack",
+          value: "Yes \u2014 customer confirmed rental requirements",
+          required: true,
+          className: "mt-0.5 h-4 w-4 shrink-0 accent-[#D7282F]"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("span", {
+          children: ["I understand the rental requirements: valid Georgia driver's license, auto insurance, a credit card for the deposit, and a ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("strong", {
+            className: "text-white",
+            children: "$45 non-refundable booking fee"
+          }), "."]
+        })]
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
         type: "hidden",
         name: "g-recaptcha-response"
@@ -796,10 +851,10 @@ function ContactForm() {
         type: "submit",
         disabled: sending,
         className: "w-full rounded-md bg-[#D7282F] px-5 py-3 font-display text-[15px] font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#EE3A41] disabled:cursor-not-allowed disabled:opacity-60",
-        children: sending ? "Sending…" : "Reserve Now"
+        children: sending ? "Sending…" : "Request booking"
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("p", {
         className: "text-[11px] leading-snug text-[#9AA4AE]",
-        children: ["Protected by reCAPTCHA \u2014 Google's", " ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("a", {
+        children: ["This is a booking request \u2014 not a confirmed reservation. Protected by reCAPTCHA \u2014 Google's", " ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("a", {
           href: "https://policies.google.com/privacy",
           target: "_blank",
           rel: "noopener noreferrer",
@@ -820,6 +875,9 @@ function ContactForm() {
 /* ------------------------------- Helpers ----------------------------- */
 
 const inputClass = "w-full rounded-md border border-white/20 bg-white/10 px-3.5 py-2.5 text-[15px] text-white placeholder:text-[#9AA4AE] focus:border-[#D7282F] focus:outline-none focus:ring-2 focus:ring-[#D7282F]/30";
+
+// Igual que inputClass pero forzando el esquema oscuro del date picker nativo
+const dateClass = inputClass + " [color-scheme:dark]";
 function Field({
   label,
   children
@@ -2008,9 +2066,11 @@ if (footerMount) {
   }));
 }
 
-// Contact Form (puede haber más de uno en la página)
+// Contact / Booking Form (puede haber más de uno; data-trailer pre-selecciona el remolque)
 document.querySelectorAll(".render-contact-form").forEach(el => {
-  react_dom_client__WEBPACK_IMPORTED_MODULE_4___default().createRoot(el).render(/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_scripts_ContactForm__WEBPACK_IMPORTED_MODULE_2__["default"], {}));
+  react_dom_client__WEBPACK_IMPORTED_MODULE_4___default().createRoot(el).render(/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_scripts_ContactForm__WEBPACK_IMPORTED_MODULE_2__["default"], {
+    defaultTrailer: el.dataset.trailer || ""
+  }));
 });
 })();
 

@@ -1,10 +1,10 @@
 <?php
 
 function boilerplate_load_assets() {
-  // Google Fonts: Oswald (display / condensada)
+  // Google Fonts: Electrolize (display / titulares)
   wp_enqueue_style(
-    'oswald-font',
-    'https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&display=swap',
+    'electrolize-font',
+    'https://fonts.googleapis.com/css2?family=Electrolize&display=swap',
     array(),
     null
   );
