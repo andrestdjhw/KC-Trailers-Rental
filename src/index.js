@@ -1,6 +1,8 @@
 import Navbar from "./scripts/Navbar"
 import Footer from "./scripts/Footer"
 import ContactForm from "./scripts/ContactForm"
+import initReveal from "./scripts/reveal"
+import initDialogs from "./scripts/dialogs"
 import React from "react"
 import ReactDOM from "react-dom/client"
 
@@ -19,5 +21,14 @@ if (footerMount) {
 
 // Contact / Booking Form (puede haber más de uno; data-trailer pre-selecciona el remolque)
 document.querySelectorAll(".render-contact-form").forEach((el) => {
-  ReactDOM.createRoot(el).render(<ContactForm defaultTrailer={el.dataset.trailer || ""} />)
+  ReactDOM.createRoot(el).render(
+    <ContactForm defaultTrailer={el.dataset.trailer || ""} compact={el.dataset.compact === "1"} />
+  )
 })
+
+// Movimiento de entrada para todo el sitio (scroll reveal + count-up).
+// El script va en el footer del build, así que el DOM ya está parseado.
+initReveal()
+
+// Modales de tipo de remolque (home).
+initDialogs()

@@ -614,30 +614,119 @@ const RECAPTCHA_SITE_KEY = "YOUR_RECAPTCHA_V3_SITE_KEY";
 /* ========================================================================= */
 
 const PHONE_DISPLAY = "770 708 8749";
+const TRAILERS_BY_TYPE = {
+  dump: ["16' Dump — Down 2 Earth", "Load Trail Dump"],
+  enclosed: ["Enclosed 14' x 7' x 7'", "Spartan Cargo Enclosed"],
+  hauler: ['Car Hauler 87" x 20\'', 'Car Hauler 102" x 20\'']
+};
+const ALL_TRAILERS = [...TRAILERS_BY_TYPE.dump, ...TRAILERS_BY_TYPE.enclosed, ...TRAILERS_BY_TYPE.hauler];
+const ALL_OPTIONS = [...ALL_TRAILERS, "Not sure yet"];
 
-// Opciones del select (coinciden con las 6 páginas de remolque)
-const TRAILER_OPTIONS = ["16' Dump — Down 2 Earth", "Load Trail Dump", "Enclosed 14' x 7' x 7'", "Spartan Cargo Enclosed", 'Car Hauler 87" x 20\'', 'Car Hauler 102" x 20\'', "Not sure yet"];
+// Segmentos del control de tipo (mismos íconos que el navbar / la home).
+const TRAILER_TYPES = [{
+  id: "all",
+  label: "All",
+  Icon: GridIcon
+}, {
+  id: "dump",
+  label: "Dump",
+  Icon: DumpIcon
+}, {
+  id: "enclosed",
+  label: "Enclosed",
+  Icon: EnclosedIcon
+}, {
+  id: "hauler",
+  label: "Hauler",
+  Icon: HaulerIcon
+}];
+
+// Tipo al que pertenece un remolque (para preseleccionar desde data-trailer).
+function typeOf(trailer) {
+  for (const t of Object.keys(TRAILERS_BY_TYPE)) {
+    if (TRAILERS_BY_TYPE[t].includes(trailer)) return t;
+  }
+  return "all";
+}
+// Opciones visibles del <select> según el tipo elegido.
+function optionsForType(type) {
+  const base = type === "all" ? ALL_TRAILERS : TRAILERS_BY_TYPE[type] || ALL_TRAILERS;
+  return [...base, "Not sure yet"];
+}
+// En modo compacto (hero) no hay <select>: el tipo ES la selección. Esto va al email.
+const TYPE_LABEL = {
+  all: "Not sure yet",
+  dump: "Dump trailer",
+  enclosed: "Enclosed trailer",
+  hauler: "Car hauler"
+};
 const isConfigured = v => v && !v.startsWith("YOUR_");
-
-// Fecha de hoy en formato YYYY-MM-DD (hora local), para el atributo min.
 const todayStr = new Date().toLocaleDateString("en-CA");
+
+/* -------------------------------------------------------------------------
+ *  Validación por campo (patrón "touched": valida en blur, revalida al
+ *  cambiar una vez tocado). Mensajes: qué pasó + qué hacer, en una línea.
+ * ---------------------------------------------------------------------- */
+function validate(name, value, all) {
+  switch (name) {
+    case "from_name":
+      return value.trim() ? "" : "Enter your full name.";
+    case "phone":
+      return value.trim().length >= 7 ? "" : "Enter a phone we can reach you at.";
+    case "reply_to":
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? "" : "Enter a valid email address.";
+    case "trailer":
+      return value ? "" : "Pick a trailer (or “Not sure yet”).";
+    case "pickup_date":
+      return value ? "" : "Choose a pickup date.";
+    case "return_date":
+      if (!value) return "Choose a return date.";
+      if (all.pickup_date && value < all.pickup_date) return "Return can't be before pickup.";
+      return "";
+    case "requirements_ack":
+      return value ? "" : "Please confirm the rental requirements.";
+    default:
+      return "";
+  }
+}
+const REQUIRED = ["from_name", "phone", "reply_to", "trailer", "pickup_date", "return_date", "requirements_ack"];
 function ContactForm({
-  defaultTrailer = ""
+  defaultTrailer = "",
+  compact = false
 }) {
   const formRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
   const [status, setStatus] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("idle"); // idle | sending | success | error
   const [errorMsg, setErrorMsg] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("");
-  const [pickup, setPickup] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("");
-  const [returnDate, setReturnDate] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("");
-  const initialTrailer = TRAILER_OPTIONS.includes(defaultTrailer) ? defaultTrailer : "";
+  const initialTrailer = ALL_OPTIONS.includes(defaultTrailer) ? defaultTrailer : "";
+  const initialType = initialTrailer ? typeOf(initialTrailer) : "all";
+  const [values, setValues] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({
+    from_name: "",
+    phone: "",
+    reply_to: "",
+    // En compacto el remolque sale del tipo (sin <select>); si no, del modelo elegido.
+    trailer: compact ? TYPE_LABEL[initialType] : initialTrailer,
+    pickup_date: "",
+    return_date: "",
+    message: "",
+    requirements_ack: false
+  });
+  const [touched, setTouched] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({});
+  const [errors, setErrors] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({});
+  const [type, setType] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(initialType);
 
-  // Inicializa EmailJS y carga el script de reCAPTCHA v3 una sola vez.
-  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
-    if (isConfigured(EMAILJS_PUBLIC_KEY)) {
-      _emailjs_browser__WEBPACK_IMPORTED_MODULE_1__["default"].init({
-        publicKey: EMAILJS_PUBLIC_KEY
-      });
+  // Cambiar de tipo: en compacto fija el remolque al tipo; si no, filtra el <select>.
+  function onPickType(t) {
+    setType(t);
+    if (compact) {
+      setField("trailer", TYPE_LABEL[t]);
+    } else if (values.trailer && !optionsForType(t).includes(values.trailer)) {
+      setField("trailer", "");
     }
+  }
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+    if (isConfigured(EMAILJS_PUBLIC_KEY)) _emailjs_browser__WEBPACK_IMPORTED_MODULE_1__["default"].init({
+      publicKey: EMAILJS_PUBLIC_KEY
+    });
     if (isConfigured(RECAPTCHA_SITE_KEY) && !document.getElementById("recaptcha-v3")) {
       const s = document.createElement("script");
       s.id = "recaptcha-v3";
@@ -646,8 +735,43 @@ function ContactForm({
       document.head.appendChild(s);
     }
   }, []);
-
-  // Obtiene un token de reCAPTCHA v3 (acción "booking").
+  function setField(name, value) {
+    const next = {
+      ...values,
+      [name]: value
+    };
+    setValues(next);
+    if (touched[name]) setErrors(e => ({
+      ...e,
+      [name]: validate(name, value, next)
+    }));
+    // return_date depende de pickup_date
+    if (name === "pickup_date" && touched.return_date) {
+      setErrors(e => ({
+        ...e,
+        return_date: validate("return_date", next.return_date, next)
+      }));
+    }
+  }
+  function onBlur(name) {
+    setTouched(t => ({
+      ...t,
+      [name]: true
+    }));
+    setErrors(e => ({
+      ...e,
+      [name]: validate(name, values[name], values)
+    }));
+  }
+  function validateAll() {
+    const next = {};
+    REQUIRED.forEach(n => {
+      next[n] = validate(n, values[n], values);
+    });
+    setErrors(next);
+    setTouched(REQUIRED.reduce((acc, n) => (acc[n] = true, acc), {}));
+    return Object.values(next).every(v => !v);
+  }
   function getRecaptchaToken() {
     return new Promise(resolve => {
       if (!window.grecaptcha || !isConfigured(RECAPTCHA_SITE_KEY)) return resolve("");
@@ -660,15 +784,16 @@ function ContactForm({
   }
   async function handleSubmit(e) {
     e.preventDefault();
+    if (!validateAll()) {
+      // Enfoca el primer campo con error
+      const first = REQUIRED.find(n => validate(n, values[n], values));
+      const el = formRef.current?.querySelector(`[name="${first}"]`);
+      if (el && el.focus) el.focus();
+      return;
+    }
     if (!isConfigured(EMAILJS_PUBLIC_KEY)) {
       setStatus("error");
       setErrorMsg("Form not configured yet. Please call us at " + PHONE_DISPLAY + ".");
-      return;
-    }
-    // Validación de fechas (la devolución no puede ser antes del retiro)
-    if (pickup && returnDate && returnDate < pickup) {
-      setStatus("error");
-      setErrorMsg("The return date can't be before the pickup date.");
       return;
     }
     setStatus("sending");
@@ -683,8 +808,18 @@ function ContactForm({
       });
       setStatus("success");
       form.reset();
-      setPickup("");
-      setReturnDate("");
+      setValues({
+        from_name: "",
+        phone: "",
+        reply_to: "",
+        trailer: "",
+        pickup_date: "",
+        return_date: "",
+        message: "",
+        requirements_ack: false
+      });
+      setTouched({});
+      setErrors({});
     } catch (err) {
       setStatus("error");
       setErrorMsg(err && typeof err.text === "string" ? err.text : "Something went wrong. Please try again or call us.");
@@ -719,7 +854,7 @@ function ContactForm({
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("button", {
         type: "button",
         onClick: () => setStatus("idle"),
-        className: "mt-5 font-display text-[14px] font-bold uppercase tracking-wide text-[#D7282F] hover:underline",
+        className: "mt-5 rounded-md font-display text-[14px] font-bold uppercase tracking-wide text-[#D7282F] underline-offset-4 transition-colors duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:text-[#EE3A41] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EE3A41] focus-visible:ring-offset-2 focus-visible:ring-offset-[#11161B]",
         children: "Send another"
       })]
     });
@@ -728,7 +863,7 @@ function ContactForm({
   /* ------------------------------- Form ------------------------------ */
   const sending = status === "sending";
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
-    className: "w-full rounded-xl border border-white/15 bg-white/10 p-6 shadow-2xl backdrop-blur-md sm:p-8",
+    className: "w-full rounded-xl border border-white/15 bg-white/10 p-5 shadow-2xl backdrop-blur-md sm:p-6",
     children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("h3", {
       className: "font-display text-2xl font-bold uppercase tracking-tight text-white",
       children: "Book your trailer"
@@ -738,47 +873,103 @@ function ContactForm({
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("form", {
       ref: formRef,
       onSubmit: handleSubmit,
-      className: "mt-5 space-y-4",
+      noValidate: true,
+      className: "mt-4 space-y-3",
       children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(Field, {
+        name: "from_name",
         label: "Full name",
+        error: errors.from_name,
         children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
           type: "text",
           name: "from_name",
-          required: true,
           autoComplete: "name",
-          className: inputClass,
-          placeholder: "John Smith"
+          placeholder: "John Smith",
+          value: values.from_name,
+          onChange: e => setField("from_name", e.target.value),
+          onBlur: () => onBlur("from_name"),
+          "aria-required": "true",
+          "aria-invalid": !!errors.from_name,
+          "aria-describedby": "err-from_name",
+          className: inputCls(errors.from_name)
         })
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
-        className: "grid gap-4 sm:grid-cols-2",
+        className: "grid gap-3 sm:grid-cols-2",
         children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(Field, {
+          name: "phone",
           label: "Phone",
+          error: errors.phone,
           children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
             type: "tel",
             name: "phone",
-            required: true,
             autoComplete: "tel",
-            className: inputClass,
-            placeholder: "(770) 000-0000"
+            placeholder: "(770) 000-0000",
+            value: values.phone,
+            onChange: e => setField("phone", e.target.value),
+            onBlur: () => onBlur("phone"),
+            "aria-required": "true",
+            "aria-invalid": !!errors.phone,
+            "aria-describedby": "err-phone",
+            className: inputCls(errors.phone)
           })
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(Field, {
+          name: "reply_to",
           label: "Email",
+          error: errors.reply_to,
           children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
             type: "email",
             name: "reply_to",
-            required: true,
             autoComplete: "email",
-            className: inputClass,
-            placeholder: "you@email.com"
+            placeholder: "you@email.com",
+            value: values.reply_to,
+            onChange: e => setField("reply_to", e.target.value),
+            onBlur: () => onBlur("reply_to"),
+            "aria-required": "true",
+            "aria-invalid": !!errors.reply_to,
+            "aria-describedby": "err-reply_to",
+            className: inputCls(errors.reply_to)
           })
         })]
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(Field, {
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("span", {
+          className: "mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#C7CDD3]",
+          children: "Trailer type"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+          role: "group",
+          "aria-label": "Trailer type",
+          className: "grid grid-cols-4 gap-1 rounded-md border border-white/15 bg-white/5 p-1",
+          children: TRAILER_TYPES.map(tt => {
+            const active = type === tt.id;
+            return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("button", {
+              type: "button",
+              "aria-pressed": active,
+              onClick: () => onPickType(tt.id),
+              className: "flex flex-col items-center gap-1 rounded px-1 py-2 font-display text-[11px] font-bold uppercase tracking-wide transition-colors duration-[var(--dur-micro)] ease-[var(--ease-out)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EE3A41] focus-visible:ring-offset-1 focus-visible:ring-offset-[#11161B] " + (active ? "bg-[#D7282F] text-white" : "text-[#C7CDD3] hover:bg-white/10"),
+              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(tt.Icon, {
+                className: "h-5 w-5"
+              }), tt.label]
+            }, tt.id);
+          })
+        })]
+      }), compact ?
+      /*#__PURE__*/
+      /* En el hero el tipo ES la selección; mandamos el valor por un hidden. */
+      (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
+        type: "hidden",
+        name: "trailer",
+        value: values.trailer
+      }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(Field, {
+        name: "trailer",
         label: "Trailer",
+        error: errors.trailer,
         children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("select", {
           name: "trailer",
-          required: true,
-          className: inputClass,
-          defaultValue: initialTrailer,
+          value: values.trailer,
+          onChange: e => setField("trailer", e.target.value),
+          onBlur: () => onBlur("trailer"),
+          "aria-required": "true",
+          "aria-invalid": !!errors.trailer,
+          "aria-describedby": "err-trailer",
+          className: inputCls(errors.trailer),
           children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("option", {
             value: "",
             disabled: true,
@@ -786,7 +977,7 @@ function ContactForm({
               color: "#1B2127"
             },
             children: "Select a trailer\u2026"
-          }), TRAILER_OPTIONS.map(t => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("option", {
+          }), optionsForType(type).map(t => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("option", {
             value: t,
             style: {
               color: "#1B2127"
@@ -795,76 +986,132 @@ function ContactForm({
           }, t))]
         })
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
-        className: "grid gap-4 sm:grid-cols-2",
+        className: "grid gap-3 sm:grid-cols-2",
         children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(Field, {
+          name: "pickup_date",
           label: "Pickup date",
+          error: errors.pickup_date,
           children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
             type: "date",
             name: "pickup_date",
-            required: true,
             min: todayStr,
-            value: pickup,
-            onChange: e => setPickup(e.target.value),
-            className: dateClass
+            value: values.pickup_date,
+            onChange: e => setField("pickup_date", e.target.value),
+            onBlur: () => onBlur("pickup_date"),
+            "aria-required": "true",
+            "aria-invalid": !!errors.pickup_date,
+            "aria-describedby": "err-pickup_date",
+            className: inputCls(errors.pickup_date) + " [color-scheme:dark]"
           })
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(Field, {
+          name: "return_date",
           label: "Return date",
+          error: errors.return_date,
           children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
             type: "date",
             name: "return_date",
-            required: true,
-            min: pickup || todayStr,
-            value: returnDate,
-            onChange: e => setReturnDate(e.target.value),
-            className: dateClass
+            min: values.pickup_date || todayStr,
+            value: values.return_date,
+            onChange: e => setField("return_date", e.target.value),
+            onBlur: () => onBlur("return_date"),
+            "aria-required": "true",
+            "aria-invalid": !!errors.return_date,
+            "aria-describedby": "err-return_date",
+            className: inputCls(errors.return_date) + " [color-scheme:dark]"
           })
         })]
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(Field, {
+      }), !compact && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(Field, {
+        name: "message",
         label: "Notes (optional)",
+        error: "",
         children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("textarea", {
           name: "message",
           rows: 2,
-          className: inputClass + " resize-none",
-          placeholder: "Load details, questions\u2026"
+          placeholder: "Load details, questions\u2026",
+          value: values.message,
+          onChange: e => setField("message", e.target.value),
+          className: inputCls("") + " resize-y"
         })
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("label", {
-        className: "flex items-start gap-2.5 text-[13px] leading-snug text-[#C7CDD3]",
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
-          type: "checkbox",
-          name: "requirements_ack",
-          value: "Yes \u2014 customer confirmed rental requirements",
-          required: true,
-          className: "mt-0.5 h-4 w-4 shrink-0 accent-[#D7282F]"
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("span", {
-          children: ["I understand the rental requirements: valid Georgia driver's license, auto insurance, a credit card for the deposit, and a ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("strong", {
-            className: "text-white",
-            children: "$45 non-refundable booking fee"
-          }), "."]
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("label", {
+          className: "flex items-start gap-2.5 text-[13px] leading-snug text-[#C7CDD3]",
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
+            type: "checkbox",
+            name: "requirements_ack",
+            value: "Yes \u2014 customer confirmed rental requirements",
+            checked: values.requirements_ack,
+            onChange: e => setField("requirements_ack", e.target.checked),
+            onBlur: () => onBlur("requirements_ack"),
+            "aria-required": "true",
+            "aria-invalid": !!errors.requirements_ack,
+            "aria-describedby": "err-requirements_ack",
+            className: "mt-0.5 h-4 w-4 shrink-0 accent-[#D7282F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EE3A41] focus-visible:ring-offset-1 focus-visible:ring-offset-[#11161B]"
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("span", {
+            children: ["I understand the rental requirements: valid Georgia driver's license, auto insurance, a credit card for the deposit, and a ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("strong", {
+              className: "text-white",
+              children: "$45 non-refundable booking fee"
+            }), "."]
+          })]
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(FieldError, {
+          id: "err-requirements_ack",
+          error: errors.requirements_ack
         })]
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
         type: "hidden",
         name: "g-recaptcha-response"
-      }), status === "error" && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("p", {
-        className: "rounded-md bg-[#D7282F]/15 px-3 py-2 text-[13px] font-medium text-[#FCA5A5]",
-        children: errorMsg
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("button", {
+      }), status === "error" && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("p", {
+        role: "alert",
+        className: "flex items-start gap-2 rounded-md bg-[#D7282F]/15 px-3 py-2 text-[13px] font-medium text-[#FCA5A5]",
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("svg", {
+          className: "mt-0.5 h-4 w-4 shrink-0",
+          viewBox: "0 0 24 24",
+          fill: "none",
+          "aria-hidden": "true",
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("path", {
+            d: "M12 8v5M12 16.5h.01M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z",
+            stroke: "currentColor",
+            strokeWidth: "1.8",
+            strokeLinecap: "round",
+            strokeLinejoin: "round"
+          })
+        }), errorMsg]
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("button", {
         type: "submit",
         disabled: sending,
-        className: "w-full rounded-md bg-[#D7282F] px-5 py-3 font-display text-[15px] font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#EE3A41] disabled:cursor-not-allowed disabled:opacity-60",
-        children: sending ? "Sending…" : "Request booking"
+        "aria-busy": sending,
+        className: "flex w-full items-center justify-center gap-2 rounded-md bg-[#D7282F] px-5 py-3 font-display text-[15px] font-bold uppercase tracking-wide text-white transition-[background-color,transform] duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:bg-[#EE3A41] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#11161B] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-[#D7282F] disabled:active:translate-y-0",
+        children: [sending && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("svg", {
+          className: "h-4 w-4 animate-spin",
+          viewBox: "0 0 24 24",
+          fill: "none",
+          "aria-hidden": "true",
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("circle", {
+            cx: "12",
+            cy: "12",
+            r: "9",
+            stroke: "currentColor",
+            strokeWidth: "2.5",
+            className: "opacity-25"
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("path", {
+            d: "M21 12a9 9 0 0 0-9-9",
+            stroke: "currentColor",
+            strokeWidth: "2.5",
+            strokeLinecap: "round"
+          })]
+        }), sending ? "Sending…" : "Request booking"]
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("p", {
         className: "text-[11px] leading-snug text-[#9AA4AE]",
         children: ["This is a booking request \u2014 not a confirmed reservation. Protected by reCAPTCHA \u2014 Google's", " ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("a", {
           href: "https://policies.google.com/privacy",
           target: "_blank",
           rel: "noopener noreferrer",
-          className: "underline",
+          className: "rounded underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EE3A41]",
           children: "Privacy Policy"
         }), " ", "and", " ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("a", {
           href: "https://policies.google.com/terms",
           target: "_blank",
           rel: "noopener noreferrer",
-          className: "underline",
+          className: "rounded underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EE3A41]",
           children: "Terms"
         }), " ", "apply."]
       })]
@@ -874,12 +1121,16 @@ function ContactForm({
 
 /* ------------------------------- Helpers ----------------------------- */
 
-const inputClass = "w-full rounded-md border border-white/20 bg-white/10 px-3.5 py-2.5 text-[15px] text-white placeholder:text-[#9AA4AE] focus:border-[#D7282F] focus:outline-none focus:ring-2 focus:ring-[#D7282F]/30";
-
-// Igual que inputClass pero forzando el esquema oscuro del date picker nativo
-const dateClass = inputClass + " [color-scheme:dark]";
+// Borde 1px constante en TODOS los estados (sin layout-shift). El estado va a
+// background (hover), ring (focus-visible) y color de borde (error) — nunca al ancho.
+function inputCls(error) {
+  const base = "w-full rounded-md border bg-white/10 px-3.5 py-2 text-[15px] text-white placeholder:text-[#9AA4AE] " + "transition-[background-color,border-color] duration-[var(--dur-micro)] ease-[var(--ease-out)] " + "hover:bg-white/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EE3A41]";
+  return base + (error ? " border-[#F87171] focus-visible:ring-[#F87171]" : " border-white/20 focus-visible:border-[#EE3A41]");
+}
 function Field({
+  name,
   label,
+  error,
   children
 }) {
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("label", {
@@ -887,7 +1138,186 @@ function Field({
     children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("span", {
       className: "mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#C7CDD3]",
       children: label
-    }), children]
+    }), children, /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(FieldError, {
+      id: `err-${name}`,
+      error: error
+    })]
+  });
+}
+
+// Slot de altura estable (min-height: 1lh) para que mostrar el error no empuje el layout.
+function FieldError({
+  id,
+  error
+}) {
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("span", {
+    id: id,
+    role: error ? "alert" : undefined,
+    className: "mt-1 flex min-h-[1lh] items-center gap-1 text-[12px] font-medium text-[#FCA5A5]",
+    children: error && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.Fragment, {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("svg", {
+        className: "h-3.5 w-3.5 shrink-0",
+        viewBox: "0 0 24 24",
+        fill: "none",
+        "aria-hidden": "true",
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("path", {
+          d: "M12 8v5M12 16.5h.01M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z",
+          stroke: "currentColor",
+          strokeWidth: "1.8",
+          strokeLinecap: "round",
+          strokeLinejoin: "round"
+        })
+      }), error]
+    })
+  });
+}
+
+/* ------------------------------ Iconos de tipo ----------------------- */
+/* Mismos trazos que el navbar / la home (inline SVG, heredan currentColor). */
+function GridIcon({
+  className
+}) {
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("svg", {
+    className: className,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    "aria-hidden": "true",
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("rect", {
+      x: "3",
+      y: "3",
+      width: "7",
+      height: "7",
+      rx: "1.2",
+      stroke: "currentColor",
+      strokeWidth: "1.8"
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("rect", {
+      x: "14",
+      y: "3",
+      width: "7",
+      height: "7",
+      rx: "1.2",
+      stroke: "currentColor",
+      strokeWidth: "1.8"
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("rect", {
+      x: "3",
+      y: "14",
+      width: "7",
+      height: "7",
+      rx: "1.2",
+      stroke: "currentColor",
+      strokeWidth: "1.8"
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("rect", {
+      x: "14",
+      y: "14",
+      width: "7",
+      height: "7",
+      rx: "1.2",
+      stroke: "currentColor",
+      strokeWidth: "1.8"
+    })]
+  });
+}
+function DumpIcon({
+  className
+}) {
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("svg", {
+    className: className,
+    viewBox: "0 0 48 32",
+    fill: "none",
+    "aria-hidden": "true",
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("path", {
+      d: "M7 21 L31 21 L36 8 L15 12 Z",
+      stroke: "currentColor",
+      strokeWidth: "2",
+      strokeLinejoin: "round"
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("path", {
+      d: "M5 24 H43",
+      stroke: "currentColor",
+      strokeWidth: "2",
+      strokeLinecap: "round"
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("circle", {
+      cx: "15",
+      cy: "27",
+      r: "3",
+      stroke: "currentColor",
+      strokeWidth: "2"
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("circle", {
+      cx: "34",
+      cy: "27",
+      r: "3",
+      stroke: "currentColor",
+      strokeWidth: "2"
+    })]
+  });
+}
+function EnclosedIcon({
+  className
+}) {
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("svg", {
+    className: className,
+    viewBox: "0 0 48 32",
+    fill: "none",
+    "aria-hidden": "true",
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("rect", {
+      x: "9",
+      y: "7",
+      width: "29",
+      height: "15",
+      rx: "1.5",
+      stroke: "currentColor",
+      strokeWidth: "2"
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("path", {
+      d: "M5 16 H9 M38 14 h4",
+      stroke: "currentColor",
+      strokeWidth: "2",
+      strokeLinecap: "round"
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("circle", {
+      cx: "17",
+      cy: "26",
+      r: "3",
+      stroke: "currentColor",
+      strokeWidth: "2"
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("circle", {
+      cx: "31",
+      cy: "26",
+      r: "3",
+      stroke: "currentColor",
+      strokeWidth: "2"
+    })]
+  });
+}
+function HaulerIcon({
+  className
+}) {
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("svg", {
+    className: className,
+    viewBox: "0 0 48 32",
+    fill: "none",
+    "aria-hidden": "true",
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("path", {
+      d: "M6 19 H38 L44 25",
+      stroke: "currentColor",
+      strokeWidth: "2",
+      strokeLinecap: "round",
+      strokeLinejoin: "round"
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("path", {
+      d: "M6 19 V15",
+      stroke: "currentColor",
+      strokeWidth: "2",
+      strokeLinecap: "round"
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("circle", {
+      cx: "16",
+      cy: "24",
+      r: "3",
+      stroke: "currentColor",
+      strokeWidth: "2"
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("circle", {
+      cx: "30",
+      cy: "24",
+      r: "3",
+      stroke: "currentColor",
+      strokeWidth: "2"
+    })]
   });
 }
 
@@ -918,7 +1348,7 @@ const PHONE_HREF = "tel:+17707088749";
 const EMAIL_DISPLAY = "info@kctrailersrental.com";
 const EMAIL_HREF = "mailto:info@kctrailersrental.com";
 const LOGO_SRC = "/wp-content/uploads/2026/06/KC_BrandLogo.png";
-const FACEBOOK_URL = "#"; // TODO: reemplazar con la URL real de la página de Facebook
+const FACEBOOK_URL = "#"; // TODO: URL real de la página de Facebook
 const LOCATION = "Duluth, Georgia, USA";
 const TRAILERS = [{
   name: "16' Dump — Down 2 Earth",
@@ -956,8 +1386,7 @@ const COMPANY = [{
   href: "/contact"
 }];
 
-/* The requested Uiverse zig-zag pattern, ported to a React style object.
-   (Original by Uiverse.io / kandalgaonkarshubham) */
+/* Zig-zag (Uiverse.io / kandalgaonkarshubham), portado a style object. */
 const FOOTER_PATTERN = {
   background: "radial-gradient(circle farthest-side at 0% 50%, #282828 23.5%, rgba(255,170,0,0) 0) 21px 30px," + "radial-gradient(circle farthest-side at 0% 50%, #2c3539 24%, rgba(240,166,17,0) 0) 19px 30px," + "linear-gradient(#282828 14%, rgba(240,166,17,0) 0, rgba(240,166,17,0) 85%, #282828 0) 0 0," + "linear-gradient(150deg, #282828 24%, #2c3539 0, #2c3539 26%, rgba(240,166,17,0) 0, rgba(240,166,17,0) 74%, #2c3539 0, #2c3539 76%, #282828 0) 0 0," + "linear-gradient(30deg, #282828 24%, #2c3539 0, #2c3539 26%, rgba(240,166,17,0) 0, rgba(240,166,17,0) 74%, #2c3539 0, #2c3539 76%, #282828 0) 0 0," + "linear-gradient(90deg, #2c3539 2%, #282828 0, #282828 98%, #2c3539 0%) 0 0 #282828",
   backgroundSize: "40px 60px"
@@ -965,6 +1394,9 @@ const FOOTER_PATTERN = {
 const HAZARD_STRIPE = {
   backgroundImage: "repeating-linear-gradient(135deg, #D7282F 0 14px, #1B2127 14px 28px)"
 };
+
+/* Anillo de foco reutilizable (rojo claro, ≥3:1 sobre el charcoal del footer). */
+const FOCUS = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EE3A41] focus-visible:ring-offset-2 focus-visible:ring-offset-[#1B2127]";
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                         */
@@ -991,7 +1423,8 @@ function Footer({
         children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("div", {
           children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("a", {
             href: "/",
-            className: "inline-flex items-center",
+            "aria-label": "KC Trailer Rentals \u2014 home",
+            className: "inline-flex items-center rounded " + FOCUS,
             children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("img", {
               src: logoUrl,
               alt: "KC Trailer Rentals",
@@ -1016,7 +1449,7 @@ function Footer({
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("a", {
             href: FACEBOOK_URL,
             "aria-label": "Facebook",
-            className: "mt-5 inline-grid h-9 w-9 place-items-center rounded-full border border-white/20 text-[#E7E5DF] transition-colors hover:border-[#D7282F] hover:bg-[#D7282F] hover:text-white",
+            className: "relative mt-5 inline-grid h-10 w-10 place-items-center rounded-full border border-white/20 text-[#E7E5DF] transition-colors duration-[var(--dur-micro)] ease-[var(--ease-out)] before:absolute before:-inset-1.5 before:content-[''] hover:border-[#D7282F] hover:bg-[#D7282F] hover:text-white " + FOCUS,
             children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)(FacebookIcon, {
               className: "h-4 w-4"
             })
@@ -1053,7 +1486,7 @@ function Footer({
             children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("li", {
               children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("a", {
                 href: PHONE_HREF,
-                className: "inline-flex items-center gap-2.5 font-semibold text-white transition-colors hover:text-[#D7282F]",
+                className: "inline-flex items-center gap-2.5 rounded font-semibold text-white transition-colors duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:text-[#D7282F] " + FOCUS,
                 children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)(PhoneIcon, {
                   className: "h-4 w-4 text-[#D7282F]"
                 }), PHONE_DISPLAY]
@@ -1061,7 +1494,7 @@ function Footer({
             }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("li", {
               children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("a", {
                 href: EMAIL_HREF,
-                className: "inline-flex items-center gap-2.5 break-all text-[#C7CDD3] transition-colors hover:text-[#D7282F]",
+                className: "inline-flex items-center gap-2.5 break-all rounded text-[#C7CDD3] transition-colors duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:text-[#D7282F] " + FOCUS,
                 children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)(MailIcon, {
                   className: "h-4 w-4 shrink-0 text-[#D7282F]"
                 }), EMAIL_DISPLAY]
@@ -1074,7 +1507,7 @@ function Footer({
             })]
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("a", {
             href: "/contact",
-            className: "mt-5 inline-flex rounded-md bg-[#D7282F] px-4 py-2.5 text-[14px] font-bold uppercase tracking-wide text-white shadow-sm transition-colors hover:bg-[#EE3A41] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D7282F]",
+            className: "mt-5 inline-flex rounded-md bg-[#D7282F] px-4 py-2.5 text-[14px] font-bold uppercase tracking-wide text-white shadow-sm transition-[background-color,transform] duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:bg-[#EE3A41] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#1B2127]",
             children: "Reserve Now"
           })]
         })]
@@ -1089,11 +1522,11 @@ function Footer({
           className: "flex items-center gap-4",
           children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("a", {
             href: "/rental-info",
-            className: "transition-colors hover:text-[#D7282F]",
+            className: "rounded transition-colors duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:text-[#D7282F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EE3A41] focus-visible:ring-offset-2 focus-visible:ring-offset-[#11161B]",
             children: "Rental Info"
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("a", {
             href: "/contact",
-            className: "transition-colors hover:text-[#D7282F]",
+            className: "rounded transition-colors duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:text-[#D7282F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EE3A41] focus-visible:ring-offset-2 focus-visible:ring-offset-[#11161B]",
             children: "Contact"
           })]
         })]
@@ -1120,7 +1553,7 @@ function FooterLink({
 }) {
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("a", {
     href: href,
-    className: "text-[14px] text-[#C7CDD3] transition-colors hover:text-[#D7282F]",
+    className: "rounded text-[14px] text-[#C7CDD3] transition-colors duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:text-[#D7282F] " + FOCUS,
     children: children
   });
 }
@@ -1276,9 +1709,6 @@ const PHONE_DISPLAY = "770 708 8749";
 const PHONE_HREF = "tel:+17707088749";
 const EMAIL_DISPLAY = "info@kctrailersrental.com";
 const EMAIL_HREF = "mailto:info@kctrailersrental.com";
-
-// Default logo. Override per-instance via the `logoUrl` prop (see index.js /
-// the data-logo attribute) so it stays portable across domains.
 const LOGO_SRC = "/wp-content/uploads/2026/06/KC_BrandLogo.png";
 const TRAILER_GROUPS = [{
   category: "Dump Trailers",
@@ -1324,11 +1754,16 @@ const TRAILER_GROUPS = [{
   }]
 }];
 
-/* Signature element: a reflective hazard stripe, the visual vocabulary
-   of the trailer/hauling world. */
-const HAZARD_STRIPE = {
-  backgroundImage: "repeating-linear-gradient(135deg, #D7282F 0 14px, #1B2127 14px 28px)"
+// Franja superior del navbar: hazard en grafito (de la paleta) para que haga
+// juego con el charcoal del topbar, en vez del rojo de marca.
+const TOP_STRIPE = {
+  backgroundImage: "repeating-linear-gradient(135deg, #6B7480 0 14px, #1B2127 14px 28px)"
 };
+
+/* Anillo de foco reutilizable sobre charcoal (rojo claro, ≥3:1). El botón rojo
+   usa anillo BLANCO aparte — un anillo rojo sobre fondo rojo desaparece. */
+const FOCUS = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EE3A41] focus-visible:ring-offset-2 focus-visible:ring-offset-[#1B2127]";
+const FOCUS_ON_RED = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#1B2127]";
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                         */
@@ -1342,8 +1777,6 @@ function Navbar({
   const [mobileTrailersOpen, setMobileTrailersOpen] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false);
   const navRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
   const closeTimer = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
-
-  // Close everything on Escape.
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     function onKey(e) {
       if (e.key === "Escape") {
@@ -1354,16 +1787,12 @@ function Navbar({
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, []);
-
-  // Lock body scroll while the mobile drawer is open.
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
   }, [mobileOpen]);
-
-  // Hover intent for the desktop mega-menu (small close delay).
   function openMega() {
     clearTimeout(closeTimer.current);
     setMegaOpen(true);
@@ -1377,22 +1806,22 @@ function Navbar({
     children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("div", {
       "aria-hidden": "true",
       className: "h-1 w-full",
-      style: HAZARD_STRIPE
+      style: TOP_STRIPE
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("div", {
       className: "bg-[#11161B] text-[#C7CDD3]",
       children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("div", {
-        className: "mx-auto flex max-w-7xl items-center justify-between px-4 py-1.5 text-[12px] tracking-wide",
+        className: "mx-auto flex max-w-7xl items-center justify-between px-4 py-2.5 text-[12px] tracking-wide",
         children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("div", {
           className: "flex items-center gap-4",
           children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("a", {
             href: PHONE_HREF,
-            className: "inline-flex items-center gap-1.5 font-semibold text-white transition-colors hover:text-[#D7282F]",
+            className: "inline-flex items-center gap-1.5 rounded font-semibold text-white transition-colors duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:text-[#D7282F] " + FOCUS,
             children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)(PhoneIcon, {
               className: "h-3.5 w-3.5"
             }), PHONE_DISPLAY]
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("a", {
             href: EMAIL_HREF,
-            className: "inline-flex items-center gap-1.5 font-semibold text-white transition-colors hover:text-[#D7282F]",
+            className: "inline-flex items-center gap-1.5 rounded font-semibold text-white transition-colors duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:text-[#D7282F] " + FOCUS,
             children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)(MailIcon, {
               className: "h-3.5 w-3.5"
             }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("span", {
@@ -1426,7 +1855,8 @@ function Navbar({
         className: "mx-auto flex h-20 max-w-7xl items-center justify-between px-4",
         children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("a", {
           href: "/",
-          className: "flex items-center",
+          "aria-label": "KC Trailer Rentals \u2014 home",
+          className: "flex items-center rounded " + FOCUS,
           children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("img", {
             src: logoUrl,
             alt: "KC Trailer Rentals",
@@ -1449,9 +1879,9 @@ function Navbar({
               "aria-haspopup": "true",
               "aria-expanded": megaOpen,
               onClick: () => setMegaOpen(v => !v),
-              className: `flex items-center gap-1.5 rounded-md px-3 py-2 text-[14px] font-semibold uppercase tracking-wide transition-colors ${megaOpen ? "bg-[#2C353D] text-[#D7282F]" : "text-[#F4F2ED] hover:text-[#D7282F]"}`,
+              className: `flex items-center gap-1.5 rounded-md px-3 py-2 text-[14px] font-semibold uppercase tracking-wide transition-colors duration-[var(--dur-micro)] ease-[var(--ease-out)] ${megaOpen ? "bg-[#2C353D] text-[#D7282F]" : "text-[#F4F2ED] hover:text-[#D7282F]"} ${FOCUS}`,
               children: ["Trailers", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)(ChevronIcon, {
-                className: `h-3.5 w-3.5 transition-transform duration-200 motion-reduce:transition-none ${megaOpen ? "rotate-180" : ""}`
+                className: `h-3.5 w-3.5 transition-transform duration-[var(--dur-short)] ease-[var(--ease-out)] motion-reduce:transition-none ${megaOpen ? "rotate-180" : ""}`
               })]
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)(NavItem, {
@@ -1465,13 +1895,13 @@ function Navbar({
           className: "hidden items-center gap-3 lg:flex",
           children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("a", {
             href: PHONE_HREF,
-            className: "flex items-center gap-2 text-[14px] font-bold text-white transition-colors hover:text-[#D7282F]",
+            className: "flex items-center gap-2 rounded text-[14px] font-bold text-white transition-colors duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:text-[#D7282F] " + FOCUS,
             children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)(PhoneIcon, {
               className: "h-4 w-4 text-[#D7282F]"
             }), PHONE_DISPLAY]
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("a", {
             href: "/contact",
-            className: "rounded-md bg-[#D7282F] px-4 py-2 text-[14px] font-bold uppercase tracking-wide text-white shadow-sm transition-colors hover:bg-[#EE3A41] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D7282F]",
+            className: "rounded-md bg-[#D7282F] px-4 py-2 text-[14px] font-bold uppercase tracking-wide text-white shadow-sm transition-[background-color,transform] duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:bg-[#EE3A41] active:translate-y-px " + FOCUS_ON_RED,
             children: "Reserve Now"
           })]
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("button", {
@@ -1479,7 +1909,7 @@ function Navbar({
           onClick: () => setMobileOpen(v => !v),
           "aria-label": mobileOpen ? "Close menu" : "Open menu",
           "aria-expanded": mobileOpen,
-          className: "grid h-10 w-10 place-items-center rounded-md text-[#F4F2ED] hover:bg-[#2C353D] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#D7282F] lg:hidden",
+          className: "grid h-11 w-11 place-items-center rounded-md text-[#F4F2ED] hover:bg-[#2C353D] lg:hidden " + FOCUS,
           children: mobileOpen ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)(CloseIcon, {
             className: "h-6 w-6"
           }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)(MenuIcon, {
@@ -1489,7 +1919,7 @@ function Navbar({
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("div", {
         onMouseEnter: openMega,
         onMouseLeave: scheduleCloseMega,
-        className: `absolute inset-x-0 top-full hidden border-t border-[#D7282F]/30 bg-[#1F262D] shadow-2xl transition-all duration-200 motion-reduce:transition-none lg:block ${megaOpen ? "visible translate-y-0 opacity-100" : "invisible -translate-y-2 opacity-0"}`,
+        className: `absolute inset-x-0 top-full hidden border-t border-[#D7282F]/30 bg-[#1F262D] shadow-2xl transition-[opacity,transform] duration-[var(--dur-short)] ease-[var(--ease-out)] motion-reduce:transition-none lg:block ${megaOpen ? "visible translate-y-0 opacity-100" : "invisible -translate-y-2 opacity-0"}`,
         children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("div", {
           className: "mx-auto grid max-w-7xl grid-cols-12 gap-8 px-6 py-8",
           children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("div", {
@@ -1508,7 +1938,7 @@ function Navbar({
                 children: group.items.map(item => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("li", {
                   children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("a", {
                     href: item.href,
-                    className: "group block rounded-md px-3 py-2.5 transition-colors hover:bg-[#2C353D]",
+                    className: "group block rounded-md px-3 py-2.5 transition-colors duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:bg-[#2C353D] " + FOCUS,
                     children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("div", {
                       className: "flex items-center justify-between gap-3",
                       children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("span", {
@@ -1540,13 +1970,13 @@ function Navbar({
               className: "mt-5 space-y-2",
               children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("a", {
                 href: PHONE_HREF,
-                className: "flex items-center justify-center gap-2 rounded-md border border-[#D7282F] px-3 py-2 text-[13px] font-bold text-[#D7282F] transition-colors hover:bg-[#D7282F] hover:text-white",
+                className: "flex items-center justify-center gap-2 rounded-md border border-[#D7282F] px-3 py-2 text-[13px] font-bold text-[#D7282F] transition-colors duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:bg-[#D7282F] hover:text-white " + FOCUS,
                 children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)(PhoneIcon, {
                   className: "h-4 w-4"
                 }), PHONE_DISPLAY]
               }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("a", {
                 href: "/contact",
-                className: "flex items-center justify-center rounded-md bg-[#D7282F] px-3 py-2 text-[13px] font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#EE3A41]",
+                className: "flex items-center justify-center rounded-md bg-[#D7282F] px-3 py-2 text-[13px] font-bold uppercase tracking-wide text-white transition-[background-color,transform] duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:bg-[#EE3A41] active:translate-y-px " + FOCUS_ON_RED,
                 children: "Reserve Now"
               })]
             })]
@@ -1557,9 +1987,9 @@ function Navbar({
       className: `fixed inset-0 top-0 z-40 lg:hidden ${mobileOpen ? "" : "pointer-events-none"}`,
       children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("div", {
         onClick: () => setMobileOpen(false),
-        className: `absolute inset-0 bg-black/60 transition-opacity duration-200 motion-reduce:transition-none ${mobileOpen ? "opacity-100" : "opacity-0"}`
+        className: `absolute inset-0 bg-black/60 transition-opacity duration-[var(--dur-short)] ease-[var(--ease-out)] motion-reduce:transition-none ${mobileOpen ? "opacity-100" : "opacity-0"}`
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("div", {
-        className: `absolute right-0 top-0 flex h-full w-[86%] max-w-sm flex-col bg-[#1B2127] shadow-2xl transition-transform duration-250 motion-reduce:transition-none ${mobileOpen ? "translate-x-0" : "translate-x-full"}`,
+        className: `absolute right-0 top-0 flex h-full w-[86%] max-w-sm flex-col bg-[#1B2127] shadow-2xl transition-transform duration-[var(--dur-long)] ease-[var(--ease-out)] motion-reduce:transition-none ${mobileOpen ? "translate-x-0" : "translate-x-full"}`,
         children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("div", {
           className: "flex items-center justify-between border-b border-white/10 px-4 py-4",
           children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("span", {
@@ -1569,7 +1999,7 @@ function Navbar({
             type: "button",
             onClick: () => setMobileOpen(false),
             "aria-label": "Close menu",
-            className: "grid h-9 w-9 place-items-center rounded-md text-[#F4F2ED] hover:bg-[#2C353D]",
+            className: "grid h-11 w-11 place-items-center rounded-md text-[#F4F2ED] hover:bg-[#2C353D] " + FOCUS,
             children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)(CloseIcon, {
               className: "h-6 w-6"
             })
@@ -1589,9 +2019,9 @@ function Navbar({
             type: "button",
             "aria-expanded": mobileTrailersOpen,
             onClick: () => setMobileTrailersOpen(v => !v),
-            className: "flex w-full items-center justify-between rounded-md px-3 py-3 text-[15px] font-semibold text-[#F4F2ED] hover:bg-[#2C353D]",
+            className: "flex w-full items-center justify-between rounded-md px-3 py-3 text-[15px] font-semibold text-[#F4F2ED] hover:bg-[#2C353D] " + FOCUS,
             children: ["Trailers", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)(ChevronIcon, {
-              className: `h-4 w-4 transition-transform duration-200 motion-reduce:transition-none ${mobileTrailersOpen ? "rotate-180" : ""}`
+              className: `h-4 w-4 transition-transform duration-[var(--dur-short)] ease-[var(--ease-out)] motion-reduce:transition-none ${mobileTrailersOpen ? "rotate-180" : ""}`
             })]
           }), mobileTrailersOpen && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("div", {
             className: "mb-1 ml-2 border-l border-white/10 pl-2",
@@ -1608,7 +2038,7 @@ function Navbar({
               }), group.items.map(item => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("a", {
                 href: item.href,
                 onClick: () => setMobileOpen(false),
-                className: "flex items-center justify-between gap-2 rounded-md px-3 py-2 hover:bg-[#2C353D]",
+                className: "flex items-center justify-between gap-2 rounded-md px-3 py-2 hover:bg-[#2C353D] " + FOCUS,
                 children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("span", {
                   className: "text-[14px] text-[#F4F2ED]",
                   children: item.name
@@ -1631,13 +2061,13 @@ function Navbar({
           className: "space-y-2 border-t border-white/10 p-4",
           children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("a", {
             href: PHONE_HREF,
-            className: "flex items-center justify-center gap-2 rounded-md border border-[#D7282F] px-3 py-2.5 text-[14px] font-bold text-[#D7282F]",
+            className: "flex items-center justify-center gap-2 rounded-md border border-[#D7282F] px-3 py-2.5 text-[14px] font-bold text-[#D7282F] transition-colors duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:bg-[#D7282F] hover:text-white " + FOCUS,
             children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)(PhoneIcon, {
               className: "h-4 w-4"
             }), PHONE_DISPLAY]
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("a", {
             href: "/contact",
-            className: "flex items-center justify-center rounded-md bg-[#D7282F] px-3 py-2.5 text-[14px] font-bold uppercase tracking-wide text-white",
+            className: "flex items-center justify-center rounded-md bg-[#D7282F] px-3 py-2.5 text-[14px] font-bold uppercase tracking-wide text-white transition-[background-color,transform] duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:bg-[#EE3A41] active:translate-y-px " + FOCUS_ON_RED,
             children: "Reserve Now"
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("p", {
             className: "pt-1 text-center text-[12px] font-semibold text-[#9AA4AE]",
@@ -1660,7 +2090,7 @@ function NavItem({
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("li", {
     children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("a", {
       href: href,
-      className: "rounded-md px-3 py-2 text-[14px] font-semibold uppercase tracking-wide text-[#F4F2ED] transition-colors hover:text-[#D7282F]",
+      className: "rounded-md px-3 py-2 text-[14px] font-semibold uppercase tracking-wide text-[#F4F2ED] transition-colors duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:text-[#D7282F] " + FOCUS,
       children: children
     })
   });
@@ -1673,7 +2103,7 @@ function MobileLink({
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("a", {
     href: href,
     onClick: onClick,
-    className: "block rounded-md px-3 py-3 text-[15px] font-semibold text-[#F4F2ED] hover:bg-[#2C353D]",
+    className: "block rounded-md px-3 py-3 text-[15px] font-semibold text-[#F4F2ED] hover:bg-[#2C353D] " + FOCUS,
     children: children
   });
 }
@@ -1922,6 +2352,137 @@ function CloseIcon({
 
 /***/ },
 
+/***/ "./src/scripts/dialogs.js"
+/*!********************************!*\
+  !*** ./src/scripts/dialogs.js ***!
+  \********************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ initDialogs)
+/* harmony export */ });
+/* ==========================================================================
+ *  dialogs.js — abre/cierra los <dialog> nativos del sitio.
+ *
+ *  · Un botón con  data-dialog-open="ID"  abre el <dialog id="ID">.
+ *  · Cualquier  [data-dialog-close]  dentro del dialog lo cierra.
+ *  · Click en el backdrop (fuera de .kc-dialog-inner) lo cierra.
+ *  · Escape y focus-trap los maneja el navegador (showModal()).
+ * ======================================================================== */
+
+function initDialogs() {
+  // Botones que abren
+  document.querySelectorAll("[data-dialog-open]").forEach(btn => {
+    const dlg = document.getElementById(btn.getAttribute("data-dialog-open"));
+    if (!dlg) return;
+    btn.addEventListener("click", () => {
+      if (typeof dlg.showModal === "function") dlg.showModal();else dlg.setAttribute("open", ""); // fallback muy viejo
+    });
+  });
+
+  // Cierre por botón + click en backdrop
+  document.querySelectorAll("dialog[data-kc-dialog]").forEach(dlg => {
+    dlg.querySelectorAll("[data-dialog-close]").forEach(b => b.addEventListener("click", () => dlg.close()));
+    dlg.addEventListener("click", e => {
+      if (e.target.closest("[data-dialog-close]")) return;
+      const box = dlg.querySelector(".kc-dialog-inner");
+      if (!box) return;
+      const r = box.getBoundingClientRect();
+      const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+      if (!inside) dlg.close();
+    });
+  });
+}
+
+/***/ },
+
+/***/ "./src/scripts/reveal.js"
+/*!*******************************!*\
+  !*** ./src/scripts/reveal.js ***!
+  \*******************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ initReveal)
+/* harmony export */ });
+/* ==========================================================================
+ *  reveal.js — movimiento de entrada para TODO el sitio.
+ *
+ *  · Un solo IntersectionObserver, reveal-once (deja de observar al revelar).
+ *  · Sin listeners de scroll, sin parallax (Hallmark motion.md).
+ *  · Respeta prefers-reduced-motion.
+ *  · Fallback sin JS / sin IO: todo queda visible.
+ *
+ *  Conteo opcional de números (precios, capacidades):
+ *      <span data-countup="150" data-prefix="$">0</span>
+ *      <span data-countup="14000" data-suffix=" lb">0</span>
+ *  Se dispara una vez cuando su sección entra en viewport (o al cargar si no
+ *  está dentro de un .reveal). Con reduced-motion, salta directo al valor final.
+ * ======================================================================== */
+
+function initReveal() {
+  const root = document.documentElement;
+  root.classList.add("motion-on"); // por si header.php no lo puso aún (idempotente)
+
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const els = document.querySelectorAll(".reveal");
+
+  // Sin soporte de IO (o no hay nada que revelar): mostrar todo y contar.
+  if (!("IntersectionObserver" in window) || !els.length) {
+    els.forEach(el => el.classList.add("is-visible"));
+    runCountups(document, reduce);
+    return;
+  }
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("is-visible");
+      runCountups(entry.target, reduce); // números dentro de esta sección
+      io.unobserve(entry.target);
+    });
+  }, {
+    threshold: 0.12,
+    rootMargin: "0px 0px -8% 0px"
+  });
+  els.forEach(el => io.observe(el));
+
+  // Números que NO están dentro de ningún .reveal: cuéntalos al cargar.
+  runCountups(document, reduce, /* onlyLoose */true);
+}
+function runCountups(scope, reduce, onlyLoose) {
+  const nums = scope.querySelectorAll("[data-countup]");
+  nums.forEach(el => {
+    if (el.dataset.done) return;
+    if (onlyLoose && el.closest(".reveal")) return; // lo maneja su sección
+    el.dataset.done = "1";
+    const target = parseFloat(el.dataset.countup);
+    const prefix = el.dataset.prefix || "";
+    const suffix = el.dataset.suffix || "";
+    if (reduce || isNaN(target)) {
+      el.textContent = prefix + format(target) + suffix;
+      return;
+    }
+    const dur = 900;
+    const start = performance.now();
+    function tick(now) {
+      const p = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - p, 3); // ease-out cúbico
+      el.textContent = prefix + format(Math.round(target * eased)) + suffix;
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
+}
+
+// Miles con coma (14000 -> 14,000) para capacidades GVWR.
+function format(n) {
+  return Number(n).toLocaleString("en-US");
+}
+
+/***/ },
+
 /***/ "react"
 /*!************************!*\
   !*** external "React" ***!
@@ -2036,12 +2597,16 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _scripts_Navbar__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./scripts/Navbar */ "./src/scripts/Navbar.js");
 /* harmony import */ var _scripts_Footer__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./scripts/Footer */ "./src/scripts/Footer.js");
 /* harmony import */ var _scripts_ContactForm__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./scripts/ContactForm */ "./src/scripts/ContactForm.js");
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react */ "react");
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_3__);
-/* harmony import */ var react_dom_client__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react-dom/client */ "react-dom/client");
-/* harmony import */ var react_dom_client__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(react_dom_client__WEBPACK_IMPORTED_MODULE_4__);
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__);
+/* harmony import */ var _scripts_reveal__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./scripts/reveal */ "./src/scripts/reveal.js");
+/* harmony import */ var _scripts_dialogs__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./scripts/dialogs */ "./src/scripts/dialogs.js");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! react */ "react");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_5__);
+/* harmony import */ var react_dom_client__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! react-dom/client */ "react-dom/client");
+/* harmony import */ var react_dom_client__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(react_dom_client__WEBPACK_IMPORTED_MODULE_6__);
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__);
+
+
 
 
 
@@ -2053,7 +2618,7 @@ __webpack_require__.r(__webpack_exports__);
 
 const navMount = document.querySelector("#render-navbar");
 if (navMount) {
-  react_dom_client__WEBPACK_IMPORTED_MODULE_4___default().createRoot(navMount).render(/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_scripts_Navbar__WEBPACK_IMPORTED_MODULE_0__["default"], {
+  react_dom_client__WEBPACK_IMPORTED_MODULE_6___default().createRoot(navMount).render(/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)(_scripts_Navbar__WEBPACK_IMPORTED_MODULE_0__["default"], {
     logoUrl: navMount.dataset.logo
   }));
 }
@@ -2061,17 +2626,25 @@ if (navMount) {
 // Footer
 const footerMount = document.querySelector("#render-footer");
 if (footerMount) {
-  react_dom_client__WEBPACK_IMPORTED_MODULE_4___default().createRoot(footerMount).render(/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_scripts_Footer__WEBPACK_IMPORTED_MODULE_1__["default"], {
+  react_dom_client__WEBPACK_IMPORTED_MODULE_6___default().createRoot(footerMount).render(/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)(_scripts_Footer__WEBPACK_IMPORTED_MODULE_1__["default"], {
     logoUrl: footerMount.dataset.logo
   }));
 }
 
 // Contact / Booking Form (puede haber más de uno; data-trailer pre-selecciona el remolque)
 document.querySelectorAll(".render-contact-form").forEach(el => {
-  react_dom_client__WEBPACK_IMPORTED_MODULE_4___default().createRoot(el).render(/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_scripts_ContactForm__WEBPACK_IMPORTED_MODULE_2__["default"], {
-    defaultTrailer: el.dataset.trailer || ""
+  react_dom_client__WEBPACK_IMPORTED_MODULE_6___default().createRoot(el).render(/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)(_scripts_ContactForm__WEBPACK_IMPORTED_MODULE_2__["default"], {
+    defaultTrailer: el.dataset.trailer || "",
+    compact: el.dataset.compact === "1"
   }));
 });
+
+// Movimiento de entrada para todo el sitio (scroll reveal + count-up).
+// El script va en el footer del build, así que el DOM ya está parseado.
+(0,_scripts_reveal__WEBPACK_IMPORTED_MODULE_3__["default"])();
+
+// Modales de tipo de remolque (home).
+(0,_scripts_dialogs__WEBPACK_IMPORTED_MODULE_4__["default"])();
 })();
 
 /******/ })()

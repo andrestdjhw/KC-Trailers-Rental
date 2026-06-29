@@ -4,6 +4,10 @@
     <meta charset="<?php bloginfo('charset'); ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <?php wp_head(); ?>
+    <!-- Marca el documento como "JS activo" ANTES del primer pintado, para que
+         los bloques .reveal arranquen ocultos sin parpadeo. Sin JS, nunca se
+         añade la clase y todo el contenido queda visible. -->
+    <script>document.documentElement.classList.add('motion-on')</script>
   </head>
   <body <?php body_class('min-h-screen flex flex-col bg-white'); ?>>
 

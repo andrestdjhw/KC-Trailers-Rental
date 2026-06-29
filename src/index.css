@@ -9,3 +9,171 @@
   --font-display: "Electrolize", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
     Roboto, sans-serif;
 }
+
+/* ==========================================================================
+   SISTEMA DE MOVIMIENTO + LENGUAJE INDUSTRIAL — fuente única de verdad.
+   Disciplina (Hallmark motion.md): solo transform/opacity, easings con nombre,
+   tres buckets de duración, reveal-once, y reduced-motion no negociable.
+
+   Uso en las plantillas:
+     · `reveal`         -> revela el bloque al hacer scroll
+     · `style="--i:N"`  -> escalona una cascada entre hermanos (0,1,2...; tope ~7)
+     · `line-draw`      -> hijo que se "dibuja" (scaleX 0->1) cuando su .reveal
+                           ancestro entra; ideal para reglas y conectores
+   El observer vive en src/scripts/reveal.js; header.php pone `motion-on` al
+   <html> antes del primer pintado (sin parpadeo; sin JS = todo visible).
+   ========================================================================== */
+:root {
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:     cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long:  420ms;
+
+  /* Lenguaje de marca reutilizable */
+  --kc-red:      #D7282F;
+  --kc-red-hi:   #EE3A41;
+  --kc-charcoal: #1B2127;
+}
+
+html { overflow-x: clip; }
+body { overflow-x: clip; }
+
+/* ----------------------------- Scroll reveal ------------------------------ */
+.motion-on .reveal {
+  opacity: 0;
+  transform: translateY(14px);
+}
+.motion-on .reveal.is-visible {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity   var(--dur-long) var(--ease-out),
+    transform var(--dur-long) var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 70ms);
+}
+
+/* --------- Linea / regla que se "dibuja" al revelar (scaleX 0 -> 1) -------- */
+.motion-on .line-draw { transform: scaleX(0); transform-origin: left; }
+.motion-on .reveal.is-visible .line-draw,
+.motion-on .line-draw.is-visible {
+  transform: scaleX(1);
+  transition: transform var(--dur-long) var(--ease-out);
+  transition-delay: 160ms;
+}
+
+/* ------------------------- Lenguaje industrial KC -------------------------
+   Reglas hazard como elemento estructural (no solo separador). */
+.rule-hazard-v {
+  width: 4px;
+  background-image: repeating-linear-gradient(135deg,
+    var(--kc-red) 0 8px, var(--kc-charcoal) 8px 16px);
+}
+.rule-hazard-h {
+  height: 4px;
+  background-image: repeating-linear-gradient(135deg,
+    var(--kc-red) 0 12px, var(--kc-charcoal) 12px 24px);
+}
+
+/* Numerales tecnicos con tabular-nums (specs, capacidades, precios) */
+.spec-figure { font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+
+/* ------------------- Hero headline: barrido grafito (1 vez) ---------------- */
+.hero-shine { color: #fff; }
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .hero-shine {
+    background-image: linear-gradient(110deg,
+      #ffffff 0%, #ffffff 40%,
+      #AAB2BB 46%, #6B7480 50%, #AAB2BB 54%,
+      #ffffff 60%, #ffffff 100%);
+    background-size: 220% auto;
+    background-position: 180% center;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: hero-shine 1.4s var(--ease-out) 0.2s 1 both;
+  }
+}
+@keyframes hero-shine {
+  from { background-position: 180% center; }
+  to   { background-position: -40% center; }
+}
+
+/* ------------------------- Trust bar (marquee) ---------------------------- */
+@keyframes trust-scroll { to { transform: translateX(-50%); } }
+.trust-track { animation: trust-scroll 32s linear infinite; }
+.trust-marquee:hover .trust-track { animation-play-state: paused; }
+
+/* ------------------------------ Reduced motion ---------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .motion-on .reveal,
+  .motion-on .reveal.is-visible {
+    transition-duration: 150ms;
+    transition-delay: 0ms;
+    transform: none;
+  }
+  .motion-on .line-draw,
+  .motion-on .reveal.is-visible .line-draw { transform: none; transition: none; }
+  .hero-shine { animation: none; }
+  .trust-track { animation: none; }
+}
+
+/* ============================ Modal (dialog) ==============================
+   <dialog> nativo: focus-trap, Escape y backdrop de fábrica. Entrada/salida
+   con scale + fade vía @starting-style + allow-discrete (navegadores 2024+;
+   donde no, aparece sin transición — degradación limpia). */
+dialog[data-kc-dialog] {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(94vw, 880px);
+  max-height: min(90vh, 780px);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  opacity: 0;
+  transform: scale(0.97);
+  transition:
+    opacity   var(--dur-long) var(--ease-out),
+    transform var(--dur-long) var(--ease-out),
+    overlay   var(--dur-long) allow-discrete,
+    display   var(--dur-long) allow-discrete;
+}
+dialog[data-kc-dialog][open] { opacity: 1; transform: scale(1); }
+@starting-style {
+  dialog[data-kc-dialog][open] { opacity: 0; transform: scale(0.97); }
+}
+dialog[data-kc-dialog]::backdrop {
+  background: rgba(11, 15, 18, 0);
+  backdrop-filter: blur(2px);
+  transition:
+    background var(--dur-long) var(--ease-out),
+    overlay    var(--dur-long) allow-discrete,
+    display    var(--dur-long) allow-discrete;
+}
+dialog[data-kc-dialog][open]::backdrop { background: rgba(11, 15, 18, 0.72); }
+@starting-style {
+  dialog[data-kc-dialog][open]::backdrop { background: rgba(11, 15, 18, 0); }
+}
+
+/* Bloquea el scroll del fondo mientras un modal está abierto */
+html:has(dialog[data-kc-dialog][open]) { overflow: hidden; }
+
+/* Las dos cards de modelo entran escalonadas al abrir */
+dialog[data-kc-dialog][open] .kc-mcard { animation: kc-mcard-in var(--dur-long) var(--ease-out) backwards; }
+dialog[data-kc-dialog][open] .kc-mcard:nth-child(2) { animation-delay: 90ms; }
+@keyframes kc-mcard-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog[data-kc-dialog],
+  dialog[data-kc-dialog]::backdrop { transition-duration: 1ms; }
+  dialog[data-kc-dialog] { transform: none; }
+  dialog[data-kc-dialog][open] .kc-mcard { animation: none; }
+}
