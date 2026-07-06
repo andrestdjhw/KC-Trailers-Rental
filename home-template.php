@@ -34,6 +34,7 @@ $trailer_types = array(
     'id' => 'dump', 'icon' => 'dump', 'name' => 'Dump Trailers',
     'blurb' => 'Debris, dirt and construction material. Hydraulic dump, heavy-duty beds.',
     'from' => 150,
+    'img' => '/wp-content/uploads/2026/07/LoadDumpTrailer.webp',
     'models' => array(
       array('name' => "16' Dump — Down 2 Earth", 'spec' => "14,000 lb GVWR · 16'×7'×4'", 'href' => '/16-dump-down-2-earth',
         'pricing' => array(array(150, 'Mon–Thu'), array(160, 'Fri–Sun'), array(30, 'Per hour'))),
@@ -45,6 +46,7 @@ $trailer_types = array(
     'id' => 'enclosed', 'icon' => 'enclosed', 'name' => 'Enclosed Trailers',
     'blurb' => 'Weatherproof transport for moves and sensitive cargo. E-track, winch, dollies.',
     'from' => 90,
+    'img' => '/wp-content/uploads/2026/07/EnclosedTrailers.webp',
     'models' => array(
       array('name' => "Enclosed 14' × 7' × 7'", 'spec' => '7,000 lb GVWR · 5k winch · E-track', 'href' => '/enclosed-14x7',
         'pricing' => array(array(90, '24 hours'), array(20, 'Per hour'))),
@@ -56,6 +58,7 @@ $trailer_types = array(
     'id' => 'hauler', 'icon' => 'hauler', 'name' => 'Car Hauler Trailers',
     'blurb' => 'Haul cars, trucks and SUVs safely. 12k winch, ramp extensions, drive-over fenders.',
     'from' => 100,
+    'img' => '/wp-content/uploads/2026/07/CarHauler.webp',
     'models' => array(
       array('name' => 'Load Trail 87" × 20\'', 'spec' => '9,990 lb GVWR · 12k winch', 'href' => '/car-hauler-87',
         'pricing' => array(array(100, 'Mon–Thu'), array(120, 'Fri–Sun'), array(25, 'Per hour'))),
@@ -76,7 +79,7 @@ $stats = array(
 $trust_items = array(
   array('label' => '24-hour service', 'icon' => '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'),
   array('label' => 'Fully equipped', 'icon' => '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3l8 4v5c0 4.5-3 7.5-8 9-5-1.5-8-4.5-8-9V7l8-4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'),
-  array('label' => 'Hablamos Español', 'icon' => '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18" stroke="currentColor" stroke-width="1.8"/></svg>'),
+  array('label' => 'Bilingual support', 'icon' => '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18" stroke="currentColor" stroke-width="1.8"/></svg>'),
   array('label' => 'Fair rates', 'icon' => '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v10M9.5 9.2c0-1 1.1-1.7 2.5-1.7s2.5.7 2.5 1.7-1.1 1.6-2.5 1.6-2.5.7-2.5 1.7 1.1 1.7 2.5 1.7 2.5-.7 2.5-1.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>'),
   array('label' => 'Duluth, Georgia', 'icon' => '<svg viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.5 7-11a7 7 0 10-14 0c0 5.5 7 11 7 11z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.8"/></svg>'),
 );
@@ -138,7 +141,7 @@ function kc_head($eyebrow, $title, $light = true) {
           Haul with<br>confidence.<br>Rent from us.
         </h1>
         <p class="reveal mt-6 max-w-xl text-lg leading-relaxed text-[#C7CDD3]" style="--i:2">
-          Dump, enclosed and car hauler trailers — fully equipped and ready 24/7 in Duluth, GA. Reserve in minutes.
+          Dump, enclosed and car hauler trailers fully equipped and ready 24/7 in Duluth, GA. Reserve in minutes.
         </p>
         <div class="reveal mt-8 flex flex-wrap items-center gap-4" style="--i:3">
           <a href="/contact" class="rounded-md bg-[#D7282F] px-7 py-3.5 font-display text-[15px] font-bold uppercase tracking-wide text-white shadow-lg transition-[background-color,transform] duration-[120ms] hover:bg-[#EE3A41] active:translate-y-px">Reserve Now</a>
@@ -197,23 +200,38 @@ function kc_head($eyebrow, $title, $light = true) {
     <div class="grid gap-6 md:grid-cols-3">
       <?php foreach ($trailer_types as $i => $tp) : ?>
         <button type="button" data-dialog-open="dialog-<?php echo esc_attr($tp['id']); ?>"
-          class="group reveal relative flex flex-col items-start overflow-hidden rounded-xl border border-white/10 bg-[#1B2127] p-7 text-left transition-[transform,box-shadow] duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1.5 hover:shadow-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EE3A41] focus-visible:ring-offset-2 focus-visible:ring-offset-[#F4F2ED]"
+          class="group reveal relative flex flex-col overflow-hidden rounded-xl border border-white/10 bg-[#1B2127] text-left transition-[transform,box-shadow] duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1.5 hover:shadow-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EE3A41] focus-visible:ring-offset-2 focus-visible:ring-offset-[#F4F2ED]"
           style="--i:<?php echo (int) $i; ?>">
-          <span class="absolute left-0 top-0 h-full w-1 origin-top scale-y-0 bg-[#D7282F] transition-transform duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-y-100" aria-hidden="true"></span>
-          <span class="grid h-14 w-14 place-items-center rounded-lg bg-[#D7282F]/12 text-[#D7282F]">
-            <span class="block h-8 w-12 [&>svg]:h-full [&>svg]:w-full"><?php echo $trailer_icons[$tp['icon']]; ?></span>
-          </span>
-          <h3 class="mt-5 font-display text-2xl font-bold uppercase tracking-tight text-white"><?php echo esc_html($tp['name']); ?></h3>
-          <p class="mt-2 flex-1 text-[15px] leading-relaxed text-[#9AA4AE]"><?php echo esc_html($tp['blurb']); ?></p>
-          <div class="mt-6 flex w-full items-end justify-between border-t border-white/10 pt-5">
-            <div>
-              <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9AA4AE]">From</div>
-              <div class="spec-figure font-display text-3xl font-bold text-[#D7282F]">$<?php echo (int) $tp['from']; ?><span class="text-[13px] text-[#9AA4AE]">/24h</span></div>
+
+          <!-- Banner: imagen real con fallback al patrón hazard si aún no se subió -->
+          <div class="relative h-64 w-full overflow-hidden sm:h-72 lg:h-80">
+            <div class="absolute inset-0" style="<?php echo $hazard; ?>" aria-hidden="true"></div>
+            <img src="<?php echo esc_url($tp['img']); ?>" alt="<?php echo esc_attr($tp['name']); ?>" loading="lazy"
+              onerror="this.style.display='none'"
+              class="absolute inset-0 h-full w-full object-cover transition-transform duration-[420ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105" />
+            <div class="absolute inset-0 bg-gradient-to-t from-[#1B2127] via-[#1B2127]/55 via-35% to-transparent" aria-hidden="true"></div>
+            <div class="absolute inset-x-0 bottom-0 flex items-center gap-3 p-5">
+              <span class="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-[#D7282F] text-white shadow-lg">
+                <span class="block h-7 w-10 [&>svg]:h-full [&>svg]:w-full"><?php echo $trailer_icons[$tp['icon']]; ?></span>
+              </span>
+              <h3 class="font-display text-2xl font-bold uppercase leading-none tracking-tight text-white [text-shadow:0_1px_8px_rgba(0,0,0,0.55)]"><?php echo esc_html($tp['name']); ?></h3>
             </div>
-            <span class="inline-flex items-center gap-1.5 rounded-md bg-[#D7282F] px-4 py-2.5 font-display text-[13px] font-bold uppercase tracking-wide text-white transition-colors duration-[120ms] group-hover:bg-[#EE3A41]">
-              View pricing
-              <svg class="h-4 w-4 transition-transform duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-1" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </span>
+          </div>
+
+          <span class="absolute left-0 top-0 z-10 h-full w-1 origin-top scale-y-0 bg-[#D7282F] transition-transform duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-y-100" aria-hidden="true"></span>
+
+          <div class="flex flex-1 flex-col p-6">
+            <p class="flex-1 text-[15px] leading-relaxed text-[#9AA4AE]"><?php echo esc_html($tp['blurb']); ?></p>
+            <div class="mt-6 flex w-full items-end justify-between border-t border-white/10 pt-5">
+              <div>
+                <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9AA4AE]">From</div>
+                <div class="spec-figure font-display text-3xl font-bold text-[#D7282F]">$<?php echo (int) $tp['from']; ?><span class="text-[13px] text-[#9AA4AE]">/24h</span></div>
+              </div>
+              <span class="inline-flex items-center gap-1.5 rounded-md bg-[#D7282F] px-4 py-2.5 font-display text-[13px] font-bold uppercase tracking-wide text-white transition-colors duration-[120ms] group-hover:bg-[#EE3A41]">
+                View pricing
+                <svg class="h-4 w-4 transition-transform duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-1" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+            </div>
           </div>
         </button>
       <?php endforeach; ?>

@@ -14,8 +14,9 @@ get_header();
 $phone_display = '770 708 8749';
 $phone_href    = 'tel:+17707088749';
 
-// Imagen del remolque (súbela a Medios o cambia la ruta).
-$trailer_image = '/wp-content/uploads/2026/06/car-hauler-87.jpg';
+// Imágenes del remolque (2). Cambia las rutas por las reales de Medios.
+$trailer_image   = '/wp-content/uploads/2026/06/car-hauler-87.jpg';   // 1 → hero
+$trailer_image_2 = '/wp-content/uploads/2026/06/car-hauler-87-2.jpg'; // 2 → bloque "About"
 
 $hazard = "background-image:repeating-linear-gradient(135deg,#D7282F 0 14px,#1B2127 14px 28px);";
 $hero_pattern = "background-color:#1B2127;"
@@ -84,16 +85,26 @@ $check = '<svg viewBox="0 0 24 24" fill="none"><path d="M20 7L9 18l-5-5" stroke=
 
 <!-- ========================= ABOUT THIS TRAILER ===================== -->
 <section class="bg-[#F4F2ED] py-20">
-  <div class="mx-auto max-w-3xl px-6 text-center">
-    <span class="text-[13px] font-semibold uppercase tracking-[0.28em] text-[#D7282F]">About this trailer</span>
-    <h2 class="mt-3 font-display text-3xl font-bold uppercase tracking-tight text-[#1B2127] sm:text-4xl">
-      Easy, dependable car hauling
-    </h2>
-    <p class="mt-5 text-lg leading-relaxed text-[#5B6670]">
-      Hauling a car, a project vehicle or a non-runner? This 87" x 20' Load Trail makes loading
-      easy with a 12,000 lb winch and a ramp extension that clears low front ends. A solid,
-      dependable choice for sedans and standard vehicles.
-    </p>
+  <div class="mx-auto grid max-w-6xl items-center gap-12 px-6 lg:grid-cols-2">
+    <!-- Imagen 2 (con fallback al patrón hazard si aún no existe) -->
+    <div class="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-[#1B2127]/10 shadow-xl">
+      <div class="absolute inset-0" style="<?php echo $hazard; ?>" aria-hidden="true"></div>
+      <img src="<?php echo esc_url($trailer_image_2); ?>" alt="Load Trail 87 inch car hauler detail" loading="lazy"
+        onerror="this.style.display='none'"
+        class="absolute inset-0 h-full w-full object-cover" />
+    </div>
+
+    <div>
+      <span class="text-[13px] font-semibold uppercase tracking-[0.28em] text-[#D7282F]">About this trailer</span>
+      <h2 class="mt-3 font-display text-3xl font-bold uppercase tracking-tight text-[#1B2127] sm:text-4xl">
+        Easy, dependable car hauling
+      </h2>
+      <p class="mt-5 text-lg leading-relaxed text-[#5B6670]">
+        Hauling a car, a project vehicle or a non-runner? This 87" x 20' Load Trail makes loading
+        easy with a 12,000 lb winch and a ramp extension that clears low front ends. A solid,
+        dependable choice for sedans and standard vehicles.
+      </p>
+    </div>
   </div>
 </section>
 
