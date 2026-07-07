@@ -1902,7 +1902,7 @@ function Navbar({
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("a", {
             href: "/contact",
             className: "rounded-md bg-[#D7282F] px-4 py-2 text-[14px] font-bold uppercase tracking-wide text-white shadow-sm transition-[background-color,transform] duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:bg-[#EE3A41] active:translate-y-px " + FOCUS_ON_RED,
-            children: "Reserve Now"
+            children: "Get in Touch"
           })]
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("button", {
           type: "button",
@@ -1977,7 +1977,7 @@ function Navbar({
               }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("a", {
                 href: "/contact",
                 className: "flex items-center justify-center rounded-md bg-[#D7282F] px-3 py-2 text-[13px] font-bold uppercase tracking-wide text-white transition-[background-color,transform] duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:bg-[#EE3A41] active:translate-y-px " + FOCUS_ON_RED,
-                children: "Reserve Now"
+                children: "Get in Touch"
               })]
             })]
           })]
@@ -2068,7 +2068,7 @@ function Navbar({
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("a", {
             href: "/contact",
             className: "flex items-center justify-center rounded-md bg-[#D7282F] px-3 py-2.5 text-[14px] font-bold uppercase tracking-wide text-white transition-[background-color,transform] duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:bg-[#EE3A41] active:translate-y-px " + FOCUS_ON_RED,
-            children: "Reserve Now"
+            children: "Get in Touch"
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("p", {
             className: "pt-1 text-center text-[12px] font-semibold text-[#9AA4AE]",
             children: "Hablamos Espa\xF1ol \xB7 24-hour service"

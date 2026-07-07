@@ -161,7 +161,7 @@ $check = '<svg viewBox="0 0 24 24" fill="none"><path d="M20 7L9 18l-5-5" stroke=
   </div>
 </section>
 
-<!-- ================= REQUIREMENTS + RESERVE (FORM) ================== -->
+<!-- ================= REQUIREMENTS + RESERVE (Booqable) ============== -->
 <section id="reserve" class="relative bg-[#11161B] py-20">
   <div class="absolute inset-0" style="<?php echo $hero_pattern; ?>" aria-hidden="true"></div>
   <div class="relative mx-auto grid max-w-7xl items-start gap-12 px-6 lg:grid-cols-2">
@@ -181,7 +181,14 @@ $check = '<svg viewBox="0 0 24 24" fill="none"><path d="M20 7L9 18l-5-5" stroke=
       </a>
     </div>
 
-    <div class="render-contact-form w-full" data-trailer="Enclosed 14' x 7' x 7'"></div>
+    <!-- Booqable: reserva real — elige fechas y agrega al carrito. El checkout se completa en Booqable. -->
+    <div class="w-full rounded-xl bg-white p-6 shadow-2xl sm:p-8">
+      <h3 class="font-display text-lg font-bold uppercase tracking-tight text-[#1B2127]">Check availability</h3>
+      <p class="mt-1 text-[14px] leading-relaxed text-[#5B6670]">Pick your rental dates, then add this trailer to your cart to reserve it.</p>
+      <div class="mt-5 booqable-datepicker"></div>
+      <div class="mt-4 booqable-product-button" data-id="enclosed-14-x-7-x-7"></div>
+      <p class="mt-4 text-[12px] leading-relaxed text-[#9AA4AE]">A $45 non-refundable booking fee reserves your trailer. Bring your Georgia license, insurance and a tow-capable vehicle at pickup.</p>
+    </div>
   </div>
 </section>
 

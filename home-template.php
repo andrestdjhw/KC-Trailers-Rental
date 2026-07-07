@@ -93,7 +93,7 @@ $why_items = array(
 
 $steps = array(
   array('n' => '1', 'title' => 'Choose your trailer', 'text' => 'Open the model page and check specs and price.'),
-  array('n' => '2', 'title' => 'Reserve', 'text' => 'Call or use the form, and pay the $45 booking fee.'),
+  array('n' => '2', 'title' => 'Reserve', 'text' => 'Pick your dates online and pay the $45 booking fee.'),
   array('n' => '3', 'title' => 'Pick up and haul', 'text' => 'Bring license, insurance and a tow-capable vehicle.'),
 );
 
@@ -144,7 +144,7 @@ function kc_head($eyebrow, $title, $light = true) {
           Dump, enclosed and car hauler trailers fully equipped and ready 24/7 in Duluth, GA. Reserve in minutes.
         </p>
         <div class="reveal mt-8 flex flex-wrap items-center gap-4" style="--i:3">
-          <a href="/contact" class="rounded-md bg-[#D7282F] px-7 py-3.5 font-display text-[15px] font-bold uppercase tracking-wide text-white shadow-lg transition-[background-color,transform] duration-[120ms] hover:bg-[#EE3A41] active:translate-y-px">Reserve Now</a>
+          <a href="#trailers" class="rounded-md bg-[#D7282F] px-7 py-3.5 font-display text-[15px] font-bold uppercase tracking-wide text-white shadow-lg transition-[background-color,transform] duration-[120ms] hover:bg-[#EE3A41] active:translate-y-px">Reserve Now</a>
           <a href="<?php echo esc_attr($phone_href); ?>" class="inline-flex items-center gap-2 rounded-md border border-white/30 px-7 py-3.5 font-display text-[15px] font-bold uppercase tracking-wide text-white transition-colors duration-[120ms] hover:border-[#D7282F] hover:text-[#D7282F]">
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M6.5 4h3l1.5 4-2 1.2a11 11 0 005.8 5.8L16 13l4 1.5v3a2 2 0 01-2.2 2A15.5 15.5 0 014.5 6.2 2 2 0 016.5 4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
             Call <?php echo esc_html($phone_display); ?>
@@ -168,7 +168,69 @@ function kc_head($eyebrow, $title, $light = true) {
           </div>
         </div>
       </div>
-      <div class="render-contact-form reveal w-full max-w-md lg:justify-self-end" data-compact="1" style="--i:1"></div>
+
+      <!-- Booqable: card de reserva del hero — selector de remolque + fechas (datepicker global).
+           Reemplaza al antiguo ContactForm de EmailJS. El <select> enruta a la página del
+           remolque (#reserve); el datepicker fija el periodo de renta para todo el carrito,
+           así las fechas ya vienen puestas cuando el cliente agrega el remolque al carrito. -->
+      <div class="reveal w-full max-w-md lg:justify-self-end" style="--i:1">
+        <div class="overflow-hidden rounded-xl bg-white shadow-2xl">
+          <div class="h-1.5 w-full" style="<?php echo $hazard; ?>" aria-hidden="true"></div>
+          <div class="p-7 sm:p-8">
+            <div class="flex items-center gap-2">
+              <span class="h-5 w-1 rule-hazard-v" aria-hidden="true"></span>
+              <span class="font-display text-[12px] font-semibold uppercase tracking-[0.22em] text-[#D7282F]">Book online</span>
+            </div>
+            <h2 class="mt-3 font-display text-2xl font-bold uppercase tracking-tight text-[#1B2127]">Check availability</h2>
+            <p class="mt-1.5 text-[14px] leading-relaxed text-[#5B6670]">Pick a trailer and your dates — we'll hold it with a $45 booking fee.</p>
+
+            <label for="kc-hero-trailer" class="mt-6 block font-display text-[12px] font-bold uppercase tracking-wide text-[#1B2127]">Trailer</label>
+            <div class="relative mt-2">
+              <select id="kc-hero-trailer" class="w-full appearance-none rounded-md border border-[#1B2127]/15 bg-[#F4F2ED] px-4 py-3 pr-10 font-display text-[14px] font-semibold uppercase tracking-wide text-[#1B2127] transition-colors focus:border-[#D7282F] focus:outline-none focus:ring-2 focus:ring-[#D7282F]/30">
+                <option value="">Choose a trailer…</option>
+                <?php foreach ($trailer_types as $tp) : foreach ($tp['models'] as $m) : ?>
+                  <option value="<?php echo esc_url($m['href']); ?>"><?php echo esc_html($m['name']); ?></option>
+                <?php endforeach; endforeach; ?>
+              </select>
+              <svg class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#1B2127]/50" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+
+            <label class="mt-5 block font-display text-[12px] font-bold uppercase tracking-wide text-[#1B2127]">Rental dates</label>
+            <div class="mt-2 booqable-datepicker"></div>
+
+            <button type="button" id="kc-hero-book" class="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#D7282F] px-6 py-3.5 font-display text-[15px] font-bold uppercase tracking-wide text-white shadow-lg transition-colors duration-[120ms] hover:bg-[#EE3A41] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D7282F]/40">
+              Continue to booking
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+
+            <div class="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-[#1B2127]/10 pt-5 text-[11px] font-semibold uppercase tracking-wide text-[#5B6670]">
+              <span class="inline-flex items-center gap-1.5">
+                <svg class="h-4 w-4 text-[#D7282F]" viewBox="0 0 24 24" fill="none"><path d="M12 3l8 4v5c0 4.5-3 7.5-8 9-5-1.5-8-4.5-8-9V7l8-4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Fully equipped
+              </span>
+              <span class="inline-flex items-center gap-1.5">
+                <svg class="h-4 w-4 text-[#D7282F]" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                24/7 service
+              </span>
+              <span class="inline-flex items-center gap-1.5">
+                <svg class="h-4 w-4 text-[#D7282F]" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18" stroke="currentColor" stroke-width="1.8"/></svg>
+                Bilingual
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <script>
+      // Hero booking: el botón lleva al remolque elegido (#reserve) o a la lista si no eligió.
+      (function () {
+        var sel = document.getElementById('kc-hero-trailer');
+        var btn = document.getElementById('kc-hero-book');
+        if (!btn) return;
+        btn.addEventListener('click', function () {
+          window.location.href = (sel && sel.value) ? sel.value + '#reserve' : '#trailers';
+        });
+      })();
+      </script>
     </div>
   </div>
   <div class="h-1.5 w-full" style="<?php echo $hazard; ?>" aria-hidden="true"></div>
@@ -270,7 +332,7 @@ function kc_head($eyebrow, $title, $light = true) {
                 <?php endforeach; ?>
               </div>
               <div class="mt-5 flex flex-1 items-end gap-3">
-                <a href="<?php echo esc_url($m['href']); ?>" class="inline-flex flex-1 items-center justify-center rounded-md bg-[#D7282F] px-4 py-2.5 font-display text-[13px] font-bold uppercase tracking-wide text-white transition-colors duration-[120ms] hover:bg-[#EE3A41] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#11161B]">Reserve this</a>
+                <a href="<?php echo esc_url($m['href']); ?>#reserve" class="inline-flex flex-1 items-center justify-center rounded-md bg-[#D7282F] px-4 py-2.5 font-display text-[13px] font-bold uppercase tracking-wide text-white transition-colors duration-[120ms] hover:bg-[#EE3A41] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#11161B]">Reserve this</a>
                 <a href="<?php echo esc_url($m['href']); ?>" class="inline-flex items-center justify-center rounded-md border border-white/25 px-4 py-2.5 font-display text-[13px] font-bold uppercase tracking-wide text-white transition-colors duration-[120ms] hover:border-[#D7282F] hover:text-[#D7282F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EE3A41]">Details</a>
               </div>
             </div>
@@ -280,7 +342,7 @@ function kc_head($eyebrow, $title, $light = true) {
         <!-- Barra de cierre con urgencia honesta (sin escasez falsa) -->
         <div class="flex flex-col items-center justify-between gap-3 border-t border-white/10 bg-[#11161B] px-6 py-5 sm:flex-row sm:px-8">
           <p class="text-center text-[14px] text-[#C7CDD3] sm:text-left"><span class="font-bold text-white">$45 booking fee</span> holds your trailer · 24/7 · same-day pickup.</p>
-          <a href="/contact" class="inline-flex shrink-0 items-center gap-2 rounded-md bg-[#D7282F] px-6 py-3 font-display text-[14px] font-bold uppercase tracking-wide text-white transition-colors duration-[120ms] hover:bg-[#EE3A41] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#11161B]">Reserve now</a>
+          <a href="#trailers" data-dialog-close class="inline-flex shrink-0 items-center gap-2 rounded-md bg-[#D7282F] px-6 py-3 font-display text-[14px] font-bold uppercase tracking-wide text-white transition-colors duration-[120ms] hover:bg-[#EE3A41] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#11161B]">Browse trailers</a>
         </div>
       </div>
     </dialog>

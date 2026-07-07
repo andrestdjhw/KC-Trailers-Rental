@@ -8,6 +8,11 @@
          los bloques .reveal arranquen ocultos sin parpadeo. Sin JS, nunca se
          añade la clase y todo el contenido queda visible. -->
     <script>document.documentElement.classList.add('motion-on')</script>
+    <!-- Booqable: motor de reservas (carrito + checkout). Escanea el DOM al cargar
+         y activa cualquier .booqable-datepicker / .booqable-product-button del sitio.
+         Lo ideal es colocarlo antes de </body>; si prefieres moverlo al footer.php,
+         pásame ese archivo y lo reubico. En <head> funciona igual (inicia en DOM ready). -->
+    <script src="https://df6b42f2-741f-483a-8ceb-46ca50a04f9e.assets.booqable.com/v2/booqable.js"></script>
   </head>
   <body <?php body_class('min-h-screen flex flex-col bg-white'); ?>>
 

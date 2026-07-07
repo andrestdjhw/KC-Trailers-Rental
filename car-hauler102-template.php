@@ -15,6 +15,7 @@ $phone_display = '770 708 8749';
 $phone_href    = 'tel:+17707088749';
 
 // Imágenes del remolque (2). Cambia las rutas por las reales de Medios.
+// OJO: estas rutas dicen "CarHauler87..." — revisa que sean las fotos del 102 (ver nota).
 $trailer_image   = '/wp-content/uploads/2026/07/CarHauler87Hero.webp';   // 1 → hero
 $trailer_image_2 = '/wp-content/uploads/2026/07/CarHauler87About.webp'; // 2 → bloque "About"
 
@@ -165,7 +166,7 @@ $check = '<svg viewBox="0 0 24 24" fill="none"><path d="M20 7L9 18l-5-5" stroke=
   </div>
 </section>
 
-<!-- ================= REQUIREMENTS + RESERVE (FORM) ================== -->
+<!-- ================= REQUIREMENTS + RESERVE (Booqable) ============== -->
 <section id="reserve" class="relative bg-[#11161B] py-20">
   <div class="absolute inset-0" style="<?php echo $hero_pattern; ?>" aria-hidden="true"></div>
   <div class="relative mx-auto grid max-w-7xl items-start gap-12 px-6 lg:grid-cols-2">
@@ -185,7 +186,14 @@ $check = '<svg viewBox="0 0 24 24" fill="none"><path d="M20 7L9 18l-5-5" stroke=
       </a>
     </div>
 
-    <div class="render-contact-form w-full" data-trailer="Car Hauler 102&quot; x 20'"></div>
+    <!-- Booqable: reserva real — elige fechas y agrega al carrito. El checkout se completa en Booqable. -->
+    <div class="w-full rounded-xl bg-white p-6 shadow-2xl sm:p-8">
+      <h3 class="font-display text-lg font-bold uppercase tracking-tight text-[#1B2127]">Check availability</h3>
+      <p class="mt-1 text-[14px] leading-relaxed text-[#5B6670]">Pick your rental dates, then add this trailer to your cart to reserve it.</p>
+      <div class="mt-5 booqable-datepicker"></div>
+      <div class="mt-4 booqable-product-button" data-id="car-hauler-102-x-20"></div>
+      <p class="mt-4 text-[12px] leading-relaxed text-[#9AA4AE]">A $45 non-refundable booking fee reserves your trailer. Bring your Georgia license, insurance and a tow-capable vehicle at pickup.</p>
+    </div>
   </div>
 </section>
 

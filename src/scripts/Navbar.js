@@ -129,7 +129,7 @@ export default function Navbar({ logoUrl = LOGO_SRC }) {
               <PhoneIcon className="h-4 w-4 text-[#D7282F]" />{PHONE_DISPLAY}
             </a>
             <a href="/contact" className={"rounded-md bg-[#D7282F] px-4 py-2 text-[14px] font-bold uppercase tracking-wide text-white shadow-sm transition-[background-color,transform] duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:bg-[#EE3A41] active:translate-y-px " + FOCUS_ON_RED}>
-              Reserve Now
+              Get in Touch
             </a>
           </div>
 
@@ -186,7 +186,7 @@ export default function Navbar({ logoUrl = LOGO_SRC }) {
                   <PhoneIcon className="h-4 w-4" />{PHONE_DISPLAY}
                 </a>
                 <a href="/contact" className={"flex items-center justify-center rounded-md bg-[#D7282F] px-3 py-2 text-[13px] font-bold uppercase tracking-wide text-white transition-[background-color,transform] duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:bg-[#EE3A41] active:translate-y-px " + FOCUS_ON_RED}>
-                  Reserve Now
+                  Get in Touch
                 </a>
               </div>
             </div>
@@ -249,7 +249,7 @@ export default function Navbar({ logoUrl = LOGO_SRC }) {
               <PhoneIcon className="h-4 w-4" />{PHONE_DISPLAY}
             </a>
             <a href="/contact" className={"flex items-center justify-center rounded-md bg-[#D7282F] px-3 py-2.5 text-[14px] font-bold uppercase tracking-wide text-white transition-[background-color,transform] duration-[var(--dur-micro)] ease-[var(--ease-out)] hover:bg-[#EE3A41] active:translate-y-px " + FOCUS_ON_RED}>
-              Reserve Now
+              Get in Touch
             </a>
             <p className="pt-1 text-center text-[12px] font-semibold text-[#9AA4AE]">Hablamos Español · 24-hour service</p>
           </div>
