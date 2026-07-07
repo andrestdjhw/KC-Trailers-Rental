@@ -15,8 +15,8 @@ $phone_display = '770 708 8749';
 $phone_href    = 'tel:+17707088749';
 
 // Imágenes del remolque (2). Cambia las rutas por las reales de Medios.
-$trailer_image   = '/wp-content/uploads/2026/06/load-trail-dump.jpg';   // 1 → hero
-$trailer_image_2 = '/wp-content/uploads/2026/06/load-trail-dump-2.jpg'; // 2 → bloque "About"
+$trailer_image   = '/wp-content/uploads/2026/07/LoadDumpTrailerHero.webp';   // 1 → hero
+$trailer_image_2 = '/wp-content/uploads/2026/07/LoadDumpTrailerAbout.webp'; // 2 → bloque "About"
 
 $hazard = "background-image:repeating-linear-gradient(135deg,#D7282F 0 14px,#1B2127 14px 28px);";
 $hero_pattern = "background-color:#1B2127;"
