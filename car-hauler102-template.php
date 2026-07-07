@@ -177,8 +177,7 @@ $check = '<svg viewBox="0 0 24 24" fill="none"><path d="M20 7L9 18l-5-5" stroke=
       </h2>
       <p class="mt-5 max-w-lg text-[16px] leading-relaxed text-[#C7CDD3]">
         To rent, you'll need a valid Georgia driver's license, auto insurance, a credit card
-        for the deposit, and a vehicle capable of towing. A $45 non-refundable booking fee
-        reserves your trailer.
+        for the deposit, and a vehicle capable of towing.
       </p>
       <a href="/rental-info" class="mt-5 inline-flex items-center gap-1.5 font-display text-[14px] font-bold uppercase tracking-wide text-[#D7282F] hover:underline">
         See full Rental Info
@@ -192,7 +191,7 @@ $check = '<svg viewBox="0 0 24 24" fill="none"><path d="M20 7L9 18l-5-5" stroke=
       <p class="mt-1 text-[14px] leading-relaxed text-[#5B6670]">Pick your rental dates, then add this trailer to your cart to reserve it.</p>
       <div class="mt-5 booqable-datepicker"></div>
       <div class="mt-4 booqable-product-button" data-id="car-hauler-102-x-20"></div>
-      <p class="mt-4 text-[12px] leading-relaxed text-[#9AA4AE]">A $45 non-refundable booking fee reserves your trailer. Bring your Georgia license, insurance and a tow-capable vehicle at pickup.</p>
+      <p class="mt-4 text-[12px] leading-relaxed text-[#9AA4AE]">Bring your Georgia license, insurance and a tow-capable vehicle at pickup.</p>
     </div>
   </div>
 </section>

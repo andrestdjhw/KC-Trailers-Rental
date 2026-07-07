@@ -93,7 +93,7 @@ $why_items = array(
 
 $steps = array(
   array('n' => '1', 'title' => 'Choose your trailer', 'text' => 'Open the model page and check specs and price.'),
-  array('n' => '2', 'title' => 'Reserve', 'text' => 'Pick your dates online and pay the $45 booking fee.'),
+  array('n' => '2', 'title' => 'Reserve', 'text' => 'Pick your dates online and check out in minutes.'),
   array('n' => '3', 'title' => 'Pick up and haul', 'text' => 'Bring license, insurance and a tow-capable vehicle.'),
 );
 
@@ -182,7 +182,7 @@ function kc_head($eyebrow, $title, $light = true) {
               <span class="font-display text-[12px] font-semibold uppercase tracking-[0.22em] text-[#D7282F]">Book online</span>
             </div>
             <h2 class="mt-3 font-display text-2xl font-bold uppercase tracking-tight text-[#1B2127]">Check availability</h2>
-            <p class="mt-1.5 text-[14px] leading-relaxed text-[#5B6670]">Pick a trailer and your dates — we'll hold it with a $45 booking fee.</p>
+            <p class="mt-1.5 text-[14px] leading-relaxed text-[#5B6670]">Pick a trailer and your dates, then add it to your cart to reserve.</p>
 
             <label for="kc-hero-trailer" class="mt-6 block font-display text-[12px] font-bold uppercase tracking-wide text-[#1B2127]">Trailer</label>
             <div class="relative mt-2">
@@ -341,7 +341,7 @@ function kc_head($eyebrow, $title, $light = true) {
 
         <!-- Barra de cierre con urgencia honesta (sin escasez falsa) -->
         <div class="flex flex-col items-center justify-between gap-3 border-t border-white/10 bg-[#11161B] px-6 py-5 sm:flex-row sm:px-8">
-          <p class="text-center text-[14px] text-[#C7CDD3] sm:text-left"><span class="font-bold text-white">$45 booking fee</span> holds your trailer · 24/7 · same-day pickup.</p>
+          <p class="text-center text-[14px] text-[#C7CDD3] sm:text-left"><span class="font-bold text-white">Reserve online</span> · 24/7 · same-day pickup.</p>
           <a href="#trailers" data-dialog-close class="inline-flex shrink-0 items-center gap-2 rounded-md bg-[#D7282F] px-6 py-3 font-display text-[14px] font-bold uppercase tracking-wide text-white transition-colors duration-[120ms] hover:bg-[#EE3A41] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#11161B]">Browse trailers</a>
         </div>
       </div>
